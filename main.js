@@ -497,8 +497,13 @@ function initResultScreen() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   BOOTSTRAP — called by Google Maps after it finishes loading
+   BOOTSTRAP
 ════════════════════════════════════════════════════════════ */
-window.initApp = function () {
+
+// Populate the district dropdown immediately — doesn't need Google Maps
+document.addEventListener('DOMContentLoaded', () => {
   initLocationScreen();
-};
+});
+
+// Called by Google Maps SDK once it finishes loading (no-op here)
+window.initApp = function () {};
