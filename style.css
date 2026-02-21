@@ -507,6 +507,16 @@
     gap: var(--sp-2);
   }
 
+  .preview-card-link {
+    display: inline-block;
+    margin-top: var(--sp-1);
+    font-size: .75rem;
+    font-weight: 700;
+    color: #4285f4;
+    text-decoration: none;
+  }
+  .preview-card-link:hover { text-decoration: underline; }
+
   .champion-card-link {
     display: inline-block;
     margin-top: var(--sp-3);

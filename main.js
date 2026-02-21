@@ -157,7 +157,8 @@ function fetchRestaurantsFromGoogle(lat, lng) {
             gradient:    GRADIENTS[i % GRADIENTS.length],
             placeId:     p.place_id,
           }));
-          resolve(shuffle(mapped).slice(0, 8));
+          // Sort by real Google rating (highest first), take top 8
+          resolve(mapped.sort((a, b) => b.rating - a.rating).slice(0, 8));
         } else {
           console.warn('Places API status:', status);
           resolve(getFallbackRestaurants(lat, lng));
@@ -303,6 +304,7 @@ function initMapScreen() {
           <span>${r.rating}</span>
           <span>(${r.reviewCount.toLocaleString()})</span>
         </div>
+        ${r.placeId ? `<a class="preview-card-link" href="https://www.google.com/maps/place/?q=place_id:${r.placeId}" target="_blank" rel="noopener">구글맵 ↗</a>` : ''}
       </div>
       <div class="preview-card-num">${i + 1}</div>`;
     list.appendChild(card);
