@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    서울 푸드 월드컵 — main.js
-   Stack: vanilla HTML/CSS/JS, Naver Maps v3 (display), Kakao Local API (data)
+   Stack: vanilla HTML/CSS/JS, Google Maps JS API + Places API
 ══════════════════════════════════════════════════════════════ */
 
 'use strict';
@@ -8,10 +8,6 @@
 /* ════════════════════════════════════════════════════════════
    PHASE 1 — CONSTANTS & DATA
 ════════════════════════════════════════════════════════════ */
-
-// ← Paste your Kakao REST API key here
-// Get it: https://developers.kakao.com → 앱 → 앱 키 → REST API 키
-const KAKAO_REST_API_KEY = 'YOUR_KAKAO_REST_API_KEY';
 
 const ROUND_LABELS  = { 0: '8강', 1: '4강', 2: '결승' };
 const TOTAL_MATCHES = [4, 2, 1];
@@ -58,18 +54,18 @@ const GRADIENTS = [
   'linear-gradient(135deg,#e0f2fe,#bae6fd)',
 ];
 
-/* ── Fallback data (used when API is unavailable) ──────────── */
+/* ── Fallback data (when API unavailable) ──────────────────── */
 const FALLBACK_RESTAURANTS = [
-  { id: 'f1',  name: '동네 삼겹살집',   category: '삼겹살',  rating: 4.5, reviewCount: 450,  emoji: '🥩', gradient: GRADIENTS[0] },
-  { id: 'f2',  name: '할머니 설렁탕',   category: '설렁탕',  rating: 4.7, reviewCount: 980,  emoji: '🍲', gradient: GRADIENTS[1] },
-  { id: 'f3',  name: '원조 치킨',       category: '치킨',    rating: 4.6, reviewCount: 1200, emoji: '🍗', gradient: GRADIENTS[2] },
-  { id: 'f4',  name: '명품 냉면',       category: '냉면',    rating: 4.4, reviewCount: 670,  emoji: '🍜', gradient: GRADIENTS[3] },
-  { id: 'f5',  name: '신선 해물탕',     category: '해물탕',  rating: 4.8, reviewCount: 340,  emoji: '🦀', gradient: GRADIENTS[4] },
-  { id: 'f6',  name: '정성 비빔밥',     category: '비빔밥',  rating: 4.5, reviewCount: 520,  emoji: '🍚', gradient: GRADIENTS[5] },
-  { id: 'f7',  name: '동네 떡볶이',     category: '분식',    rating: 4.3, reviewCount: 1540, emoji: '🌶️', gradient: GRADIENTS[6] },
-  { id: 'f8',  name: '장인 돈까스',     category: '돈까스',  rating: 4.6, reviewCount: 789,  emoji: '🍱', gradient: GRADIENTS[7] },
-  { id: 'f9',  name: '수제 버거',       category: '버거',    rating: 4.4, reviewCount: 612,  emoji: '🍔', gradient: GRADIENTS[8] },
-  { id: 'f10', name: '이탈리안 파스타', category: '파스타',  rating: 4.5, reviewCount: 390,  emoji: '🍝', gradient: GRADIENTS[9] },
+  { id: 'f1',  name: '동네 삼겹살집',   category: '삼겹살', rating: 4.5, reviewCount: 450,  emoji: '🥩', gradient: GRADIENTS[0] },
+  { id: 'f2',  name: '할머니 설렁탕',   category: '설렁탕', rating: 4.7, reviewCount: 980,  emoji: '🍲', gradient: GRADIENTS[1] },
+  { id: 'f3',  name: '원조 치킨',       category: '치킨',   rating: 4.6, reviewCount: 1200, emoji: '🍗', gradient: GRADIENTS[2] },
+  { id: 'f4',  name: '명품 냉면',       category: '냉면',   rating: 4.4, reviewCount: 670,  emoji: '🍜', gradient: GRADIENTS[3] },
+  { id: 'f5',  name: '신선 해물탕',     category: '해물탕', rating: 4.8, reviewCount: 340,  emoji: '🦀', gradient: GRADIENTS[4] },
+  { id: 'f6',  name: '정성 비빔밥',     category: '비빔밥', rating: 4.5, reviewCount: 520,  emoji: '🍚', gradient: GRADIENTS[5] },
+  { id: 'f7',  name: '동네 떡볶이',     category: '분식',   rating: 4.3, reviewCount: 1540, emoji: '🌶️', gradient: GRADIENTS[6] },
+  { id: 'f8',  name: '장인 돈까스',     category: '돈까스', rating: 4.6, reviewCount: 789,  emoji: '🍱', gradient: GRADIENTS[7] },
+  { id: 'f9',  name: '수제 버거',       category: '버거',   rating: 4.4, reviewCount: 612,  emoji: '🍔', gradient: GRADIENTS[8] },
+  { id: 'f10', name: '이탈리안 파스타', category: '파스타', rating: 4.5, reviewCount: 390,  emoji: '🍝', gradient: GRADIENTS[9] },
 ];
 
 /* ── State ─────────────────────────────────────────────────── */
@@ -87,6 +83,8 @@ const state = {
   map: null,
   markers: [],
   resultMap: null,
+  resultMarker: null,
+  resultInfoWindow: null,
 };
 
 /* ════════════════════════════════════════════════════════════
@@ -102,68 +100,71 @@ function shuffle(arr) {
   return a;
 }
 
-function getCategoryEmoji(categoryName) {
-  const n = categoryName || '';
-  if (n.includes('삼겹살') || n.includes('구이') || n.includes('스테이크') || n.includes('갈비')) return '🥩';
-  if (n.includes('치킨') || n.includes('닭'))                                                       return '🍗';
-  if (n.includes('스시') || n.includes('초밥') || n.includes('일식'))                              return '🍣';
-  if (n.includes('중식') || n.includes('짜장') || n.includes('중국'))                              return '🥡';
-  if (n.includes('피자'))                                                                            return '🍕';
-  if (n.includes('버거') || n.includes('햄버거'))                                                   return '🍔';
-  if (n.includes('분식') || n.includes('떡볶이') || n.includes('김밥'))                            return '🌶️';
-  if (n.includes('국밥') || n.includes('설렁탕') || n.includes('해장') || n.includes('한식'))      return '🍲';
-  if (n.includes('냉면') || n.includes('국수') || n.includes('라멘') || n.includes('우동') || n.includes('쌀국수')) return '🍜';
-  if (n.includes('해물') || n.includes('회') || n.includes('해산물') || n.includes('조개'))        return '🦀';
-  if (n.includes('파스타') || n.includes('이탈리안') || n.includes('양식'))                        return '🍝';
-  if (n.includes('돈까스'))                                                                          return '🍱';
-  if (n.includes('찜') || n.includes('전골') || n.includes('탕'))                                  return '🫕';
-  if (n.includes('인도') || n.includes('카레'))                                                     return '🍛';
-  if (n.includes('멕시칸') || n.includes('타코') || n.includes('부리또'))                          return '🌮';
-  if (n.includes('베트남') || n.includes('태국') || n.includes('동남아'))                          return '🍜';
-  if (n.includes('카페') || n.includes('커피') || n.includes('디저트'))                            return '☕';
-  if (n.includes('베이커리') || n.includes('빵'))                                                   return '🥐';
+function getGoogleCategory(types) {
+  if (!types) return '음식점';
+  if (types.includes('cafe'))          return '카페';
+  if (types.includes('bakery'))        return '베이커리';
+  if (types.includes('bar'))           return '바/술집';
+  if (types.includes('meal_takeaway')) return '포장전문';
+  return '음식점';
+}
+
+function getCategoryEmoji(types) {
+  if (!types) return '🍽️';
+  if (types.includes('cafe'))    return '☕';
+  if (types.includes('bakery'))  return '🥐';
+  if (types.includes('bar'))     return '🍺';
   return '🍽️';
 }
 
-/* ── Kakao Local API ────────────────────────────────────────── */
-async function fetchRestaurantsFromKakao(lat, lng) {
-  try {
-    const url =
-      `https://dapi.kakao.com/v2/local/search/category.json` +
-      `?category_group_code=FD6&x=${lng}&y=${lat}&radius=1500&size=15&sort=popularity`;
+function makeEmojiMarkerIcon(emoji) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
+    <text y="32" x="2" font-size="28" font-family="serif">${emoji}</text>
+  </svg>`;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(40, 40),
+    anchor:     new google.maps.Point(20, 20),
+  };
+}
 
-    const res = await fetch(url, {
-      headers: { Authorization: `KakaoAK ${KAKAO_REST_API_KEY}` },
-    });
+/* ════════════════════════════════════════════════════════════
+   PHASE 3 — GOOGLE PLACES API
+════════════════════════════════════════════════════════════ */
 
-    if (!res.ok) throw new Error(`Kakao API ${res.status}`);
+function fetchRestaurantsFromGoogle(lat, lng) {
+  return new Promise((resolve) => {
+    const service = new google.maps.places.PlacesService(document.createElement('div'));
 
-    const data   = await res.json();
-    const places = data.documents || [];
-    if (places.length === 0) throw new Error('No results');
-
-    const mapped = places.map((p, i) => {
-      const sub = p.category_name.split(' > ').pop();
-      return {
-        id:          p.id,
-        name:        p.place_name,
-        category:    sub,
-        rating:      parseFloat((4.0 + Math.random() * 0.9).toFixed(1)),
-        reviewCount: Math.floor(100 + Math.random() * 2900),
-        address:     p.road_address_name || p.address_name,
-        lat:         parseFloat(p.y),
-        lng:         parseFloat(p.x),
-        emoji:       getCategoryEmoji(p.category_name),
-        gradient:    GRADIENTS[i % GRADIENTS.length],
-        placeUrl:    p.place_url,
-      };
-    });
-
-    return shuffle(mapped).slice(0, 8);
-  } catch (e) {
-    console.warn('Kakao API failed, using fallback:', e.message);
-    return getFallbackRestaurants(lat, lng);
-  }
+    service.nearbySearch(
+      {
+        location: new google.maps.LatLng(lat, lng),
+        radius: 1500,
+        type: 'restaurant',
+      },
+      (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && results?.length) {
+          const mapped = results.map((p, i) => ({
+            id:          p.place_id,
+            name:        p.name,
+            category:    getGoogleCategory(p.types),
+            rating:      p.rating        != null ? p.rating             : parseFloat((4.0 + Math.random() * 0.9).toFixed(1)),
+            reviewCount: p.user_ratings_total != null ? p.user_ratings_total : Math.floor(100 + Math.random() * 900),
+            address:     p.vicinity,
+            lat:         p.geometry.location.lat(),
+            lng:         p.geometry.location.lng(),
+            emoji:       getCategoryEmoji(p.types),
+            gradient:    GRADIENTS[i % GRADIENTS.length],
+            placeId:     p.place_id,
+          }));
+          resolve(shuffle(mapped).slice(0, 8));
+        } else {
+          console.warn('Places API status:', status);
+          resolve(getFallbackRestaurants(lat, lng));
+        }
+      }
+    );
+  });
 }
 
 function getFallbackRestaurants(lat, lng) {
@@ -176,7 +177,7 @@ function getFallbackRestaurants(lat, lng) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   PHASE 3 — SCREEN NAVIGATION
+   PHASE 4 — SCREEN NAVIGATION
 ════════════════════════════════════════════════════════════ */
 
 function goToScreen(name) {
@@ -194,14 +195,13 @@ function goToScreen(name) {
 }
 
 /* ════════════════════════════════════════════════════════════
-   PHASE 4 — LOCATION SCREEN
+   PHASE 5 — LOCATION SCREEN
 ════════════════════════════════════════════════════════════ */
 
 function initLocationScreen() {
   const districtSelect = document.getElementById('district-select');
   const btnFind        = document.getElementById('btn-find');
 
-  // Populate all 25 Seoul districts
   districtSelect.innerHTML = '<option value="">구를 선택하세요</option>';
   SEOUL_DISTRICTS.forEach(d => {
     const opt = document.createElement('option');
@@ -222,7 +222,7 @@ function initLocationScreen() {
     btnFind.disabled    = true;
     btnFind.textContent = '맛집 불러오는 중... ⏳';
 
-    state.restaurants = await fetchRestaurantsFromKakao(districtData.lat, districtData.lng);
+    state.restaurants = await fetchRestaurantsFromGoogle(districtData.lat, districtData.lng);
 
     btnFind.textContent = '식당 찾기 🔍';
     btnFind.disabled    = false;
@@ -232,16 +232,17 @@ function initLocationScreen() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   PHASE 5 — MAP SCREEN
+   PHASE 6 — MAP SCREEN
 ════════════════════════════════════════════════════════════ */
 
 function createMap(containerId, lat, lng, zoom) {
   try {
-    if (typeof naver === 'undefined' || !naver.maps) throw new Error('Naver Maps not available');
-    return new naver.maps.Map(containerId, {
-      center: new naver.maps.LatLng(lat, lng),
+    if (typeof google === 'undefined' || !google.maps) throw new Error('Google Maps not available');
+    return new google.maps.Map(document.getElementById(containerId), {
+      center:           { lat, lng },
       zoom,
-      mapTypeId: naver.maps.MapTypeId.NORMAL,
+      mapTypeId:        google.maps.MapTypeId.ROADMAP,
+      gestureHandling:  'cooperative',
     });
   } catch (e) {
     const container = document.getElementById(containerId);
@@ -249,7 +250,7 @@ function createMap(containerId, lat, lng, zoom) {
       container.innerHTML = `
         <div class="map-error">
           <span class="map-error-icon">🗺️</span>
-          <p class="map-error-text">지도를 불러올 수 없습니다.<br>Naver Maps API 키를 확인하세요.</p>
+          <p class="map-error-text">지도를 불러올 수 없습니다.<br>Google Maps API 키를 확인하세요.</p>
         </div>`;
     }
     return null;
@@ -262,32 +263,26 @@ function initMapScreen() {
   document.getElementById('map-screen-title').textContent = `${districtData.label} 맛집`;
 
   if (state.map) {
-    try { state.map.setCenter(new naver.maps.LatLng(districtData.lat, districtData.lng)); } catch (_) {}
+    state.map.setCenter({ lat: districtData.lat, lng: districtData.lng });
+    state.map.setZoom(14);
   } else {
     state.map = createMap('map-container', districtData.lat, districtData.lng, 14);
   }
 
   // Clear old markers
-  state.markers.forEach(m => { try { m.setMap(null); } catch (_) {} });
+  state.markers.forEach(m => m.setMap(null));
   state.markers = [];
 
   // Place emoji markers
   if (state.map) {
     state.restaurants.forEach(r => {
-      try {
-        const marker = new naver.maps.Marker({
-          position: new naver.maps.LatLng(r.lat, r.lng),
-          map: state.map,
-          icon: {
-            content: `<div style="font-size:1.5rem;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.3))">
-                        <span class="marker-emoji">${r.emoji}</span>
-                      </div>`,
-            anchor: new naver.maps.Point(14, 14),
-          },
-          title: r.name,
-        });
-        state.markers.push(marker);
-      } catch (_) {}
+      const marker = new google.maps.Marker({
+        position: { lat: r.lat, lng: r.lng },
+        map:       state.map,
+        icon:      makeEmojiMarkerIcon(r.emoji),
+        title:     r.name,
+      });
+      state.markers.push(marker);
     });
   }
 
@@ -313,12 +308,12 @@ function initMapScreen() {
     list.appendChild(card);
   });
 
-  document.getElementById('map-back-btn').onclick          = () => goToScreen('location');
-  document.getElementById('btn-start-tournament').onclick  = () => goToScreen('tournament');
+  document.getElementById('map-back-btn').onclick         = () => goToScreen('location');
+  document.getElementById('btn-start-tournament').onclick = () => goToScreen('tournament');
 }
 
 /* ════════════════════════════════════════════════════════════
-   PHASE 6 — TOURNAMENT
+   PHASE 7 — TOURNAMENT
 ════════════════════════════════════════════════════════════ */
 
 function initBracket() {
@@ -432,7 +427,7 @@ function initTournamentScreen() {
 }
 
 /* ════════════════════════════════════════════════════════════
-   PHASE 7 — RESULT SCREEN
+   PHASE 8 — RESULT SCREEN
 ════════════════════════════════════════════════════════════ */
 
 function initResultScreen() {
@@ -451,62 +446,54 @@ function initResultScreen() {
           <span>${c.rating}</span>
           <span style="color:var(--color-text-muted);font-size:.8125rem">(${c.reviewCount.toLocaleString()} 리뷰)</span>
         </div>
-        ${c.placeUrl ? `<a class="champion-card-link" href="${c.placeUrl}" target="_blank" rel="noopener">카카오맵에서 보기 →</a>` : ''}
+        ${c.placeId ? `<a class="champion-card-link" href="https://www.google.com/maps/place/?q=place_id:${c.placeId}" target="_blank" rel="noopener">구글맵에서 보기 →</a>` : ''}
       </div>
     </div>`;
 
   if (state.resultMap) {
-    try {
-      state.resultMap.setCenter(new naver.maps.LatLng(c.lat, c.lng));
-      state.resultMap.setZoom(16);
-    } catch (_) {}
+    state.resultMap.setCenter({ lat: c.lat, lng: c.lng });
+    state.resultMap.setZoom(16);
+    if (state.resultMarker)     state.resultMarker.setMap(null);
+    if (state.resultInfoWindow) state.resultInfoWindow.close();
   } else {
     state.resultMap = createMap('result-map-container', c.lat, c.lng, 16);
   }
 
   if (state.resultMap && c.lat) {
-    try {
-      new naver.maps.Marker({
-        position: new naver.maps.LatLng(c.lat, c.lng),
-        map: state.resultMap,
-        icon: {
-          content: `<div style="font-size:2rem;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))">
-                      <span class="marker-emoji">${c.emoji}</span>
-                    </div>`,
-          anchor: new naver.maps.Point(18, 18),
-        },
-        title: c.name,
-      });
+    state.resultMarker = new google.maps.Marker({
+      position: { lat: c.lat, lng: c.lng },
+      map:       state.resultMap,
+      icon:      makeEmojiMarkerIcon(c.emoji),
+      title:     c.name,
+    });
 
-      const infoWindow = new naver.maps.InfoWindow({
-        content: `<div style="padding:8px 12px;font-family:'Noto Sans KR',sans-serif;font-size:.875rem;font-weight:700;">${c.name}</div>`,
-        borderColor: '#f97316',
-      });
-      infoWindow.open(state.resultMap, new naver.maps.LatLng(c.lat, c.lng));
-    } catch (_) {}
+    state.resultInfoWindow = new google.maps.InfoWindow({
+      content: `<div style="padding:8px 12px;font-family:'Noto Sans KR',sans-serif;font-size:.875rem;font-weight:700;">${c.name}</div>`,
+    });
+    state.resultInfoWindow.open({ anchor: state.resultMarker, map: state.resultMap });
   }
 
   document.getElementById('btn-restart').onclick = () => {
-    state.selectedDistrict = null;
-    state.restaurants      = [];
-    state.champion         = null;
-    state.bracket          = { rounds: [], currentRound: 0, currentMatch: 0, winners: [[]] };
-    state.map              = null;
-    state.resultMap        = null;
-    state.markers          = [];
+    state.selectedDistrict  = null;
+    state.restaurants       = [];
+    state.champion          = null;
+    state.bracket           = { rounds: [], currentRound: 0, currentMatch: 0, winners: [[]] };
+    state.map               = null;
+    state.resultMap         = null;
+    state.markers           = [];
+    state.resultMarker      = null;
+    state.resultInfoWindow  = null;
 
-    const districtSelect = document.getElementById('district-select');
-    const btnFind        = document.getElementById('btn-find');
-    districtSelect.value = '';
-    btnFind.disabled     = true;
+    document.getElementById('district-select').value = '';
+    document.getElementById('btn-find').disabled     = true;
 
     goToScreen('location');
   };
 }
 
 /* ════════════════════════════════════════════════════════════
-   BOOTSTRAP
+   BOOTSTRAP — called by Google Maps after it finishes loading
 ════════════════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
+window.initApp = function () {
   initLocationScreen();
-});
+};

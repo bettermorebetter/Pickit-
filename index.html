@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>서울 푸드 월드컵 🍽️</title>
-  <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=2bj2g781u4"></script>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAGrlyhhFVDnLiuBIPojdYXKGz8P0bvxIs&libraries=places&language=ko&region=KR&callback=initApp" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
@@ -20,7 +20,7 @@
       <div class="location-hero">
         <div class="location-icon" aria-hidden="true">🍽️</div>
         <h1 class="location-title">서울 푸드 월드컵</h1>
-        <p class="location-subtitle">서울 어느 구? 카카오 맛집 데이터로 토너먼트!</p>
+        <p class="location-subtitle">구글 맛집 데이터로 토너먼트 시작!</p>
       </div>
 
       <div class="location-form">
@@ -50,7 +50,7 @@
         <h2 class="screen-title" id="map-screen-title">강남구 맛집</h2>
       </header>
 
-      <div id="map-container" class="map-container" aria-label="네이버 지도"></div>
+      <div id="map-container" class="map-container" aria-label="구글 지도"></div>
 
       <div class="restaurant-list-header">
         <h3 class="restaurant-list-title">선택된 식당 8곳</h3>
