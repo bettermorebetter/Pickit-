@@ -294,6 +294,9 @@ function initMapScreen() {
     const card = document.createElement('div');
     card.className = 'preview-card';
     card.setAttribute('role', 'listitem');
+    const mapsHref = r.placeId
+      ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}`
+      : `https://www.google.com/maps/search/${encodeURIComponent(r.name + ' ' + (r.address || ''))}`;
     card.innerHTML = `
       <div class="preview-card-emoji" style="background:${r.gradient}">${r.emoji}</div>
       <div class="preview-card-info">
@@ -304,9 +307,9 @@ function initMapScreen() {
           <span>${r.rating}</span>
           <span>(${r.reviewCount.toLocaleString()})</span>
         </div>
-        ${r.placeId ? `<a class="preview-card-link" href="https://www.google.com/maps/place/?q=place_id:${r.placeId}" target="_blank" rel="noopener">구글맵 ↗</a>` : ''}
+        ${r.address ? `<div class="preview-card-address">📍 ${r.address}</div>` : ''}
       </div>
-      <div class="preview-card-num">${i + 1}</div>`;
+      <a class="preview-card-maps-btn" href="${mapsHref}" target="_blank" rel="noopener" aria-label="${r.name} 구글맵">🗺️</a>`;
     list.appendChild(card);
   });
 

@@ -507,15 +507,29 @@
     gap: var(--sp-2);
   }
 
-  .preview-card-link {
-    display: inline-block;
-    margin-top: var(--sp-1);
+  .preview-card-address {
     font-size: .75rem;
-    font-weight: 700;
-    color: #4285f4;
-    text-decoration: none;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .preview-card-link:hover { text-decoration: underline; }
+
+  .preview-card-maps-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    text-decoration: none;
+    transition: background .15s;
+  }
+  .preview-card-maps-btn:hover { background: #e2e8f0; }
 
   .champion-card-link {
     display: inline-block;
