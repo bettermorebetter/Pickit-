@@ -56,16 +56,16 @@ const GRADIENTS = [
 
 /* ── Fallback data (when API unavailable) ──────────────────── */
 const FALLBACK_RESTAURANTS = [
-  { id: 'f1',  name: '동네 삼겹살집',   category: '삼겹살', rating: 4.5, reviewCount: 450,  emoji: '🥩', gradient: GRADIENTS[0] },
-  { id: 'f2',  name: '할머니 설렁탕',   category: '설렁탕', rating: 4.7, reviewCount: 980,  emoji: '🍲', gradient: GRADIENTS[1] },
-  { id: 'f3',  name: '원조 치킨',       category: '치킨',   rating: 4.6, reviewCount: 1200, emoji: '🍗', gradient: GRADIENTS[2] },
-  { id: 'f4',  name: '명품 냉면',       category: '냉면',   rating: 4.4, reviewCount: 670,  emoji: '🍜', gradient: GRADIENTS[3] },
-  { id: 'f5',  name: '신선 해물탕',     category: '해물탕', rating: 4.8, reviewCount: 340,  emoji: '🦀', gradient: GRADIENTS[4] },
-  { id: 'f6',  name: '정성 비빔밥',     category: '비빔밥', rating: 4.5, reviewCount: 520,  emoji: '🍚', gradient: GRADIENTS[5] },
-  { id: 'f7',  name: '동네 떡볶이',     category: '분식',   rating: 4.3, reviewCount: 1540, emoji: '🌶️', gradient: GRADIENTS[6] },
-  { id: 'f8',  name: '장인 돈까스',     category: '돈까스', rating: 4.6, reviewCount: 789,  emoji: '🍱', gradient: GRADIENTS[7] },
-  { id: 'f9',  name: '수제 버거',       category: '버거',   rating: 4.4, reviewCount: 612,  emoji: '🍔', gradient: GRADIENTS[8] },
-  { id: 'f10', name: '이탈리안 파스타', category: '파스타', rating: 4.5, reviewCount: 390,  emoji: '🍝', gradient: GRADIENTS[9] },
+  { id: 'f1',  name: '우래옥',                     category: '평양냉면', rating: 4.5, reviewCount: 3241,  emoji: '🍜', gradient: GRADIENTS[0], address: '서울 중구 창경궁로5길 13',       lat: 37.5696, lng: 126.9987 },
+  { id: 'f2',  name: '명동교자',                   category: '칼국수',   rating: 4.4, reviewCount: 8912,  emoji: '🍜', gradient: GRADIENTS[1], address: '서울 중구 명동10길 29',           lat: 37.5634, lng: 126.9840 },
+  { id: 'f3',  name: '하동관',                     category: '곰탕',     rating: 4.5, reviewCount: 2087,  emoji: '🍲', gradient: GRADIENTS[2], address: '서울 중구 명동9길 12',            lat: 37.5637, lng: 126.9852 },
+  { id: 'f4',  name: '진옥화 할매 원조 닭한마리', category: '닭한마리', rating: 4.4, reviewCount: 4512,  emoji: '🍗', gradient: GRADIENTS[3], address: '서울 종로구 종로 264',             lat: 37.5699, lng: 127.0095 },
+  { id: 'f5',  name: '광장시장 마약김밥',         category: '분식',     rating: 4.5, reviewCount: 14780, emoji: '🍱', gradient: GRADIENTS[4], address: '서울 종로구 종로 88 광장시장',    lat: 37.5700, lng: 127.0086 },
+  { id: 'f6',  name: '봉피양',                     category: '평양냉면', rating: 4.3, reviewCount: 1823,  emoji: '🍜', gradient: GRADIENTS[5], address: '서울 종로구 새문안로 97',          lat: 37.5752, lng: 126.9726 },
+  { id: 'f7',  name: '이남장',                     category: '삼겹살',   rating: 4.3, reviewCount: 2734,  emoji: '🥩', gradient: GRADIENTS[6], address: '서울 마포구 와우산로 21-18',       lat: 37.5524, lng: 126.9225 },
+  { id: 'f8',  name: '삼청동 수제비',             category: '수제비',   rating: 4.2, reviewCount: 1234,  emoji: '🍲', gradient: GRADIENTS[7], address: '서울 종로구 삼청로 101-1',         lat: 37.5818, lng: 126.9810 },
+  { id: 'f9',  name: '청진옥',                     category: '해장국',   rating: 4.3, reviewCount: 987,   emoji: '🍲', gradient: GRADIENTS[8], address: '서울 종로구 종로 19',              lat: 37.5718, lng: 126.9780 },
+  { id: 'f10', name: '오장동 흥남집',             category: '함흥냉면', rating: 4.4, reviewCount: 1956,  emoji: '🍜', gradient: GRADIENTS[9], address: '서울 중구 오장동5길 3',            lat: 37.5630, lng: 126.9990 },
 ];
 
 /* ── State ─────────────────────────────────────────────────── */
@@ -191,9 +191,8 @@ function fetchRestaurantsFromGoogle(lat, lng) {
 function getFallbackRestaurants(lat, lng) {
   return shuffle(FALLBACK_RESTAURANTS).slice(0, 8).map(r => ({
     ...r,
-    address: '주소 정보 없음',
-    lat: lat + (Math.random() - 0.5) * 0.01,
-    lng: lng + (Math.random() - 0.5) * 0.01,
+    lat: r.lat !== undefined ? r.lat : lat + (Math.random() - 0.5) * 0.01,
+    lng: r.lng !== undefined ? r.lng : lng + (Math.random() - 0.5) * 0.01,
   }));
 }
 
