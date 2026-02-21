@@ -134,37 +134,57 @@ function makeEmojiMarkerIcon(emoji) {
 
 function fetchRestaurantsFromGoogle(lat, lng) {
   return new Promise((resolve) => {
-    const service = new google.maps.places.PlacesService(document.createElement('div'));
+    // If Google Maps SDK didn't load, fall back immediately
+    if (typeof google === 'undefined' || !google.maps || !google.maps.places) {
+      console.warn('Google Maps SDK not available');
+      resolve(getFallbackRestaurants(lat, lng));
+      return;
+    }
 
-    service.nearbySearch(
-      {
-        location: new google.maps.LatLng(lat, lng),
-        radius: 1500,
-        type: 'restaurant',
-      },
-      (results, status) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && results?.length) {
-          const mapped = results.map((p, i) => ({
-            id:          p.place_id,
-            name:        p.name,
-            category:    getGoogleCategory(p.types),
-            rating:      p.rating        != null ? p.rating             : parseFloat((4.0 + Math.random() * 0.9).toFixed(1)),
-            reviewCount: p.user_ratings_total != null ? p.user_ratings_total : Math.floor(100 + Math.random() * 900),
-            address:     p.vicinity,
-            lat:         p.geometry.location.lat(),
-            lng:         p.geometry.location.lng(),
-            emoji:       getCategoryEmoji(p.types),
-            gradient:    GRADIENTS[i % GRADIENTS.length],
-            placeId:     p.place_id,
-          }));
-          // Sort by real Google rating (highest first), take top 8
-          resolve(mapped.sort((a, b) => b.rating - a.rating).slice(0, 8));
-        } else {
-          console.warn('Places API status:', status);
-          resolve(getFallbackRestaurants(lat, lng));
+    // Safety timeout — resolve with fallback after 8 seconds
+    const timeout = setTimeout(() => {
+      console.warn('Places API timed out');
+      resolve(getFallbackRestaurants(lat, lng));
+    }, 8000);
+
+    try {
+      const service = new google.maps.places.PlacesService(document.createElement('div'));
+
+      service.nearbySearch(
+        {
+          location: new google.maps.LatLng(lat, lng),
+          radius: 1500,
+          type: 'restaurant',
+        },
+        (results, status) => {
+          clearTimeout(timeout);
+          if (status === google.maps.places.PlacesServiceStatus.OK && results?.length) {
+            const mapped = results.map((p, i) => ({
+              id:          p.place_id,
+              name:        p.name,
+              category:    getGoogleCategory(p.types),
+              rating:      p.rating             != null ? p.rating             : parseFloat((4.0 + Math.random() * 0.9).toFixed(1)),
+              reviewCount: p.user_ratings_total  != null ? p.user_ratings_total : Math.floor(100 + Math.random() * 900),
+              address:     p.vicinity,
+              lat:         p.geometry.location.lat(),
+              lng:         p.geometry.location.lng(),
+              emoji:       getCategoryEmoji(p.types),
+              gradient:    GRADIENTS[i % GRADIENTS.length],
+              placeId:     p.place_id,
+            }));
+            // Sort by real Google rating (highest first), take top 8
+            resolve(mapped.sort((a, b) => b.rating - a.rating).slice(0, 8));
+          } else {
+            console.warn('Places API status:', status);
+            resolve(getFallbackRestaurants(lat, lng));
+          }
         }
-      }
-    );
+      );
+    } catch (e) {
+      clearTimeout(timeout);
+      console.warn('Places API error:', e);
+      resolve(getFallbackRestaurants(lat, lng));
+    }
   });
 }
 
@@ -223,7 +243,11 @@ function initLocationScreen() {
     btnFind.disabled    = true;
     btnFind.textContent = '맛집 불러오는 중... ⏳';
 
-    state.restaurants = await fetchRestaurantsFromGoogle(districtData.lat, districtData.lng);
+    try {
+      state.restaurants = await fetchRestaurantsFromGoogle(districtData.lat, districtData.lng);
+    } catch (e) {
+      state.restaurants = getFallbackRestaurants(districtData.lat, districtData.lng);
+    }
 
     btnFind.textContent = '식당 찾기 🔍';
     btnFind.disabled    = false;
