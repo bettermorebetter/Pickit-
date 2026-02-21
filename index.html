@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>푸드 월드컵 🍽️</title>
-  <!-- Naver Maps SDK — replace 2bj2g781u4 with your NCP Client ID -->
-  <!-- Get your key: https://www.ncloud.com → Console → AI·NAVER API → Maps → Web Dynamic Map -->
+  <title>서울 푸드 월드컵 🍽️</title>
   <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=2bj2g781u4"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,25 +19,16 @@
     <div class="location-wrapper">
       <div class="location-hero">
         <div class="location-icon" aria-hidden="true">🍽️</div>
-        <h1 class="location-title">푸드 월드컵</h1>
-        <p class="location-subtitle">오늘 뭐 먹지? 토너먼트로 결정하세요!</p>
+        <h1 class="location-title">서울 푸드 월드컵</h1>
+        <p class="location-subtitle">서울 어느 구? 카카오 맛집 데이터로 토너먼트!</p>
       </div>
 
       <div class="location-form">
         <div class="select-group">
-          <label class="select-label" for="city-select">시/도</label>
+          <label class="select-label" for="district-select">구 선택</label>
           <div class="select-wrap">
-            <select id="city-select" class="select" aria-label="도시 선택">
-              <option value="">시/도 선택</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="select-group">
-          <label class="select-label" for="district-select">구/군</label>
-          <div class="select-wrap">
-            <select id="district-select" class="select" disabled aria-label="구/군 선택">
-              <option value="">먼저 시/도를 선택하세요</option>
+            <select id="district-select" class="select" aria-label="구 선택">
+              <option value="">구를 선택하세요</option>
             </select>
           </div>
         </div>

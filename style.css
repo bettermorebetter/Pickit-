@@ -507,6 +507,16 @@
     gap: var(--sp-2);
   }
 
+  .champion-card-link {
+    display: inline-block;
+    margin-top: var(--sp-3);
+    font-size: .875rem;
+    font-weight: 700;
+    color: #f97316;
+    text-decoration: none;
+  }
+  .champion-card-link:hover { text-decoration: underline; }
+
   /* ── Map screen footer ───────────────────────────────────── */
   .map-screen-footer {
     position: sticky;
