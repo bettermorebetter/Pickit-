@@ -1,14 +1,127 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+  <title>푸드 월드컵 🍽️</title>
+  <!-- Naver Maps SDK — replace YOUR_CLIENT_ID_HERE with your NCP Client ID -->
+  <!-- Get your key: https://www.ncloud.com → Console → AI·NAVER API → Maps → Web Dynamic Map -->
+  <script src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=YOUR_CLIENT_ID_HERE"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link href="/style.css" rel="stylesheet" />
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+
+  <!-- ══════════════════════════════════════════
+       Screen 1: Location
+  ══════════════════════════════════════════ -->
+  <section id="screen-location" class="screen screen--active" aria-label="위치 선택">
+    <div class="location-wrapper">
+      <div class="location-hero">
+        <div class="location-icon" aria-hidden="true">🍽️</div>
+        <h1 class="location-title">푸드 월드컵</h1>
+        <p class="location-subtitle">오늘 뭐 먹지? 토너먼트로 결정하세요!</p>
+      </div>
+
+      <div class="location-form">
+        <div class="select-group">
+          <label class="select-label" for="city-select">시/도</label>
+          <div class="select-wrap">
+            <select id="city-select" class="select" aria-label="도시 선택">
+              <option value="">시/도 선택</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="select-group">
+          <label class="select-label" for="district-select">구/군</label>
+          <div class="select-wrap">
+            <select id="district-select" class="select" disabled aria-label="구/군 선택">
+              <option value="">먼저 시/도를 선택하세요</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="btn-find" class="btn btn--primary btn--full" disabled aria-label="식당 찾기">
+          식당 찾기 🔍
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       Screen 2: Map + Preview
+  ══════════════════════════════════════════ -->
+  <section id="screen-map" class="screen" aria-label="지도 및 식당 미리보기">
+    <div class="map-screen-wrapper">
+      <header class="screen-header">
+        <button class="btn-back" id="map-back-btn" aria-label="뒤로가기">← 뒤로</button>
+        <h2 class="screen-title" id="map-screen-title">강남구 맛집</h2>
+      </header>
+
+      <div id="map-container" class="map-container" aria-label="네이버 지도"></div>
+
+      <div class="restaurant-list-header">
+        <h3 class="restaurant-list-title">선택된 식당 8곳</h3>
+        <p class="restaurant-list-sub">토너먼트에 참가할 식당들입니다</p>
+      </div>
+
+      <div id="restaurant-preview-list" class="restaurant-preview-list" role="list">
+        <!-- 8 restaurant preview cards injected by JS -->
+      </div>
+
+      <div class="map-screen-footer">
+        <button id="btn-start-tournament" class="btn btn--primary btn--full">
+          토너먼트 시작! 🏆
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       Screen 3: Tournament
+  ══════════════════════════════════════════ -->
+  <section id="screen-tournament" class="screen" aria-label="토너먼트">
+    <div class="tournament-wrapper">
+      <header class="screen-header">
+        <button class="btn-back" id="tournament-back-btn" aria-label="뒤로가기">← 뒤로</button>
+        <div class="round-badge" id="round-badge" aria-live="polite">8강</div>
+      </header>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="7"></div>
+      </div>
+      <p class="progress-label" id="progress-label" aria-live="polite">8강 · 매치 1/4</p>
+
+      <h2 class="tournament-prompt">더 먹고 싶은 것을 선택하세요!</h2>
+
+      <div class="tournament-vs-grid" id="tournament-vs-grid">
+        <div class="tournament-card-slot" id="card-left"></div>
+        <div class="vs-divider" aria-hidden="true">VS</div>
+        <div class="tournament-card-slot" id="card-right"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════
+       Screen 4: Result
+  ══════════════════════════════════════════ -->
+  <section id="screen-result" class="screen" aria-label="결과">
+    <div class="result-wrapper">
+      <div class="result-crown" aria-hidden="true">👑</div>
+      <h2 class="result-title">오늘의 선택!</h2>
+      <div id="champion-card-container"></div>
+
+      <div id="result-map-container" class="map-container map-container--result" aria-label="결과 지도"></div>
+
+      <button id="btn-restart" class="btn btn--secondary btn--full">
+        다시 하기 🔄
+      </button>
+    </div>
+  </section>
+
+  <script defer src="/main.js"></script>
 </body>
 </html>
