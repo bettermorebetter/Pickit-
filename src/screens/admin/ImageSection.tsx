@@ -39,10 +39,11 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
 
     let cancelled = false;
     (async () => {
-      const photos = await fetchPhotosForRestaurant(r.name, r.lat, r.lng);
+      const { displaySlice, fullPool } = await fetchPhotosForRestaurant(r.name, r.lat, r.lng);
       if (cancelled) return;
-      if (photos.length > 0) {
-        dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos });
+      if (displaySlice.length > 0) {
+        dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: displaySlice });
+        dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: fullPool });
       }
     })();
 
@@ -125,11 +126,12 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
     if (!r) return;
     setRefreshing(true);
     const existingPool = state.fullPhotoPool[restaurantId] || [];
-    const { displaySlice, fullPool } = await fetchMorePhotos(r.name, r.lat, r.lng, existingPool);
+    const currentDisplay = state.photoCache[restaurantId] || [];
+    const { displaySlice, fullPool } = await fetchMorePhotos(r.name, r.lat, r.lng, existingPool, currentDisplay);
     dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: fullPool });
     dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: displaySlice });
     setRefreshing(false);
-  }, [areaId, restaurantId, state.fullPhotoPool, dispatch]);
+  }, [areaId, restaurantId, state.fullPhotoPool, state.photoCache, dispatch]);
 
   return (
     <div className="editor-images-section">

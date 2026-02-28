@@ -1,5 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
    Admin Photos — Google Places photo search for restaurant editing
+   Uses Place.fetchFields for maximum photo count per place.
 ══════════════════════════════════════════════════════════════ */
 
 import { getPhotoUrl, hasNewPlacesApi, hasOldPlacesApi } from './places.ts';
@@ -7,7 +8,6 @@ import { PHOTO_POOLS } from '../data/photos.ts';
 import { shuffle } from '../data/constants.ts';
 
 const POOL_SIZE = 15;
-const FETCH_LIMIT = 30;
 
 /* ── Review photo detection ───────────────────────────────── */
 
@@ -17,58 +17,69 @@ function isReviewPhoto(photo: any): boolean {
   return attrs.some((a: any) => a.uri && a.uri.includes('maps/contrib'));
 }
 
-function sortPhotosByReview(photos: any[]): string[] {
-  const reviewPhotos = photos.filter(isReviewPhoto);
-  const editorialPhotos = photos.filter(p => !isReviewPhoto(p));
-  return [...reviewPhotos, ...editorialPhotos]
-    .map(p => getPhotoUrl(p, true))
-    .filter(Boolean) as string[];
+/**
+ * Sort photos: review photos first, then editorial.
+ * Returns raw photo objects (not URLs) to allow further processing.
+ */
+function partitionPhotos(photos: any[]): { review: any[]; editorial: any[] } {
+  return {
+    review: photos.filter(isReviewPhoto),
+    editorial: photos.filter(p => !isReviewPhoto(p)),
+  };
 }
 
-/* ── New Places API ───────────────────────────────────────── */
+/* ── New Places API (fetchFields for max photos) ────────── */
 
-async function fetchPhotosNew(name: string, lat: number, lng: number, maxResults = 1): Promise<string[]> {
+async function findPlaceId(name: string, lat: number, lng: number): Promise<any | null> {
   const Place = (google.maps.places as any).Place;
   const searchFn = Place.searchByText || Place.searchText;
-  if (!searchFn) return [];
+  if (!searchFn) return null;
 
   const { places } = await searchFn.call(Place, {
     textQuery: name,
-    fields: ['photos', 'id', 'displayName'],
-    maxResultCount: maxResults,
+    fields: ['id', 'displayName'],
+    maxResultCount: 1,
     locationBias: { center: { lat, lng }, radius: 300 },
   });
 
-  if (maxResults === 1) {
-    if (!places?.[0]?.photos?.length) return [];
-    return sortPhotosByReview(places[0].photos);
-  }
+  return places?.[0] || null;
+}
 
-  // Multiple results: gather all photos, review-first
-  const allPhotos = (places || []).flatMap((pl: any) => pl.photos || []);
-  const reviewPhotos = allPhotos.filter(isReviewPhoto);
-  const editorialPhotos = allPhotos.filter((p: any) => !isReviewPhoto(p));
-  return [...reviewPhotos, ...editorialPhotos]
-    .map((p: any) => getPhotoUrl(p, true))
-    .filter(Boolean) as string[];
+async function fetchPhotosViaFetchFields(name: string, lat: number, lng: number): Promise<{ reviewUrls: string[]; editorialUrls: string[] }> {
+  const Place = (google.maps.places as any).Place;
+  const empty = { reviewUrls: [], editorialUrls: [] };
+
+  // Step 1: Find place by text search
+  const found = await findPlaceId(name, lat, lng);
+  if (!found?.id) return empty;
+
+  // Step 2: Use fetchFields to get all available photos
+  const place = new Place({ id: found.id });
+  await place.fetchFields({ fields: ['photos'] });
+
+  if (!place.photos?.length) return empty;
+
+  const { review, editorial } = partitionPhotos(place.photos);
+  return {
+    reviewUrls: review.map((p: any) => getPhotoUrl(p, true)).filter(Boolean) as string[],
+    editorialUrls: editorial.map((p: any) => getPhotoUrl(p, true)).filter(Boolean) as string[],
+  };
 }
 
 /* ── Old Places API ───────────────────────────────────────── */
 
-function fetchPhotosOld(name: string, lat: number, lng: number): Promise<string[]> {
+function fetchPhotosOld(name: string, lat: number, lng: number): Promise<{ reviewUrls: string[]; editorialUrls: string[] }> {
+  const empty = { reviewUrls: [], editorialUrls: [] };
   return new Promise(resolve => {
     const svc = new google.maps.places.PlacesService(document.createElement('div'));
-    const timer = setTimeout(() => resolve([]), 8000);
+    const timer = setTimeout(() => resolve(empty), 8000);
 
     svc.findPlaceFromQuery(
-      {
-        query: name + ' 음식',
-        fields: ['place_id'],
-      } as any,
+      { query: name, fields: ['place_id'] } as any,
       (results, status) => {
         if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.[0]) {
           clearTimeout(timer);
-          resolve([]);
+          resolve(empty);
           return;
         }
         svc.getDetails(
@@ -76,14 +87,16 @@ function fetchPhotosOld(name: string, lat: number, lng: number): Promise<string[
           (place, detailStatus) => {
             clearTimeout(timer);
             if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !place?.photos) {
-              resolve([]);
+              resolve(empty);
               return;
             }
-            const all = place.photos.slice(0, POOL_SIZE + 1)
+            // Old API doesn't have authorAttributions — treat all as review photos
+            // but move first photo (often exterior/logo) to end
+            const all = place.photos
               .map(p => getPhotoUrl(p, false))
               .filter(Boolean) as string[];
-            // Put first photo (often exterior/logo) last so food shots come first
-            resolve((all.length > 1 ? [...all.slice(1), all[0]] : all).slice(0, POOL_SIZE));
+            const reordered = all.length > 1 ? [...all.slice(1), all[0]] : all;
+            resolve({ reviewUrls: reordered, editorialUrls: [] });
           }
         );
       }
@@ -100,21 +113,16 @@ export interface ReviewData {
 
 async function fetchReviewDataNew(name: string, lat: number, lng: number): Promise<ReviewData | null> {
   const Place = (google.maps.places as any).Place;
-  const searchFn = Place.searchByText || Place.searchText;
-  if (!searchFn) return null;
 
-  const { places } = await searchFn.call(Place, {
-    textQuery: name,
-    fields: ['rating', 'userRatingCount', 'displayName'],
-    maxResultCount: 1,
-    locationBias: { center: { lat, lng }, radius: 300 },
-  });
+  const found = await findPlaceId(name, lat, lng);
+  if (!found?.id) return null;
 
-  if (!places?.[0]) return null;
-  const p = places[0];
+  const place = new Place({ id: found.id });
+  await place.fetchFields({ fields: ['rating', 'userRatingCount'] });
+
   return {
-    rating: p.rating ?? 0,
-    reviewCount: p.userRatingCount ?? 0,
+    rating: place.rating ?? 0,
+    reviewCount: place.userRatingCount ?? 0,
   };
 }
 
@@ -166,66 +174,101 @@ export async function fetchReviewData(name: string, lat: number, lng: number): P
 /* ── Public API ────────────────────────────────────────────── */
 
 /**
- * Fetch photos for a restaurant (initial load).
+ * Fetch photos for a restaurant (initial load via edit panel).
+ * Uses fetchFields for maximum photo count.
+ * Returns: review photos first, then editorial, deduplicated.
  */
 export async function fetchPhotosForRestaurant(
   name: string, lat: number, lng: number
-): Promise<string[]> {
+): Promise<{ displaySlice: string[]; fullPool: string[] }> {
+  const empty = { displaySlice: [], fullPool: [] };
   try {
+    let result: { reviewUrls: string[]; editorialUrls: string[] };
+
     if (hasNewPlacesApi()) {
-      return await fetchPhotosNew(name, lat, lng);
+      result = await fetchPhotosViaFetchFields(name, lat, lng);
     } else if (hasOldPlacesApi()) {
-      return await fetchPhotosOld(name, lat, lng);
+      result = await fetchPhotosOld(name, lat, lng);
+    } else {
+      return empty;
     }
+
+    // Deduplicate: review photos first, then editorial (no duplicates)
+    const seen = new Set<string>();
+    const allUrls: string[] = [];
+    for (const url of [...result.reviewUrls, ...result.editorialUrls]) {
+      if (!seen.has(url)) {
+        seen.add(url);
+        allUrls.push(url);
+      }
+    }
+
+    if (!allUrls.length) return empty;
+
+    // Show first 15 (review photos come first)
+    return {
+      displaySlice: allUrls.slice(0, POOL_SIZE),
+      fullPool: allUrls,
+    };
   } catch (e) {
     console.warn('Google photo fetch failed:', e);
   }
-  return [];
+  return empty;
 }
 
 /**
- * Fetch more photos and return a display slice + accumulated pool.
- * Review photos are shown first (up to 15), then non-duplicate editorial photos.
+ * Refresh photos: show a different random set from the full pool.
+ * If pool is exhausted, re-fetch from API.
  */
 export async function fetchMorePhotos(
   name: string,
   lat: number,
   lng: number,
-  existingPool: string[]
+  existingPool: string[],
+  currentDisplay: string[]
 ): Promise<{ displaySlice: string[]; fullPool: string[] }> {
-  const seen = new Set(existingPool);
-  let newUrls = [...existingPool];
+  let pool = [...existingPool];
 
+  // If pool has more photos than currently displayed, show different ones
+  if (pool.length > POOL_SIZE) {
+    // Exclude currently displayed photos, pick from remaining
+    const remaining = pool.filter(url => !currentDisplay.includes(url));
+    if (remaining.length >= POOL_SIZE) {
+      return { displaySlice: shuffle(remaining).slice(0, POOL_SIZE), fullPool: pool };
+    }
+    // Not enough remaining — shuffle the whole pool for a new random set
+    return { displaySlice: shuffle([...pool]).slice(0, POOL_SIZE), fullPool: pool };
+  }
+
+  // Pool too small — re-fetch to try to get more
   try {
+    let result: { reviewUrls: string[]; editorialUrls: string[] };
     if (hasNewPlacesApi()) {
-      const photos = await fetchPhotosNew(name, lat, lng, 3);
-      for (const url of photos) {
-        if (!seen.has(url)) {
-          seen.add(url);
-          newUrls.push(url);
-        }
-      }
-      newUrls = newUrls.slice(0, FETCH_LIMIT);
+      result = await fetchPhotosViaFetchFields(name, lat, lng);
     } else if (hasOldPlacesApi()) {
-      const fetched = await fetchPhotosOld(name, lat, lng);
-      for (const url of fetched) {
-        if (!seen.has(url)) {
-          seen.add(url);
-          newUrls.push(url);
-        }
+      result = await fetchPhotosOld(name, lat, lng);
+    } else {
+      result = { reviewUrls: [], editorialUrls: [] };
+    }
+
+    const seen = new Set(pool);
+    for (const url of [...result.reviewUrls, ...result.editorialUrls]) {
+      if (!seen.has(url)) {
+        seen.add(url);
+        pool.push(url);
       }
     }
   } catch (e) {
     console.warn('Refresh photo fetch failed:', e);
   }
 
-  // Review photos already come first from sortPhotosByReview — keep that order, no shuffle
-  let displaySlice = newUrls.slice(0, POOL_SIZE);
+  // Show a shuffled set different from current display
+  let displaySlice = shuffle([...pool]).slice(0, POOL_SIZE);
 
   // Fallback to generic food photos if empty
   if (!displaySlice.length) {
     displaySlice = shuffle(Object.values(PHOTO_POOLS).flat()).slice(0, POOL_SIZE);
   }
 
-  return { displaySlice, fullPool: newUrls };
+  return { displaySlice, fullPool: pool };
 }

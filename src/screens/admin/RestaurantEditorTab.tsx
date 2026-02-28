@@ -2,16 +2,9 @@
    Restaurant Editor Tab — curated restaurant CRUD
 ══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { FOOD_CATEGORIES, computeBayesianScore } from '../../data/constants.ts';
-import {
-  hasNewPlacesApi,
-  hasOldPlacesApi,
-  searchCategoryNewApi,
-  searchCategoryOldApi,
-} from '../../services/places.ts';
 import { fetchReviewData } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
@@ -73,67 +66,38 @@ export default function RestaurantEditorTab() {
     dispatch({ type: 'SET_EDITING', id: newId });
   }, [editorAreaId, dispatch]);
 
-  const handleFetchFromMaps = useCallback(async () => {
-    const area = CURATED_AREAS[editorAreaId];
-    if (!area) return;
+  // Auto-fetch review data on first load per area
+  const fetchedAreas = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (fetchedAreas.current.has(editorAreaId)) return;
+    fetchedAreas.current.add(editorAreaId);
 
-    showToast('구글맵에서 식당 불러오는 중...');
-    const { lat, lng } = area;
-    const categoryKeys = Object.keys(FOOD_CATEGORIES) as FoodCategoryKey[];
-    const PER_CAT = 13;
+    const rests = getCuratedDataRaw(editorAreaId);
+    if (!rests.length) return;
 
-    try {
-      const categoryResults: Record<string, any[]> = {};
-
-      if (hasNewPlacesApi()) {
-        const results = await Promise.all(categoryKeys.map(k => searchCategoryNewApi(lat, lng, k)));
-        categoryKeys.forEach((k, i) => { categoryResults[k] = results[i]; });
-      } else if (hasOldPlacesApi()) {
-        const svc = new google.maps.places.PlacesService(document.createElement('div'));
-        const results = await Promise.all(categoryKeys.map(k => searchCategoryOldApi(svc, lat, lng, k)));
-        categoryKeys.forEach((k, i) => { categoryResults[k] = results[i]; });
-      } else {
-        showToast('Places API를 사용할 수 없습니다.');
-        return;
-      }
-
-      const allRests = Object.values(categoryResults).flat();
-      if (!allRests.length) { showToast('식당을 찾지 못했습니다.'); return; }
-
-      const C = allRests.reduce((s, r) => s + (r.rating || 0), 0) / allRests.length;
-      allRests.forEach(r => { r.bayesianScore = computeBayesianScore(r.rating, r.reviewCount, C); });
-
-      const allCurated: CuratedRestaurantSeed[] = [];
-      categoryKeys.forEach(catKey => {
-        const sorted = (categoryResults[catKey] || [])
-          .sort((a: any, b: any) => b.bayesianScore - a.bayesianScore)
-          .slice(0, PER_CAT);
-        sorted.forEach((r: any) => {
-          allCurated.push({
-            id: r.id || `${editorAreaId}_${catKey}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            name: r.name,
-            category: catKey,
-            address: r.address || '',
-            rating: r.rating || 0,
-            reviewCount: r.reviewCount || 0,
-            lat: r.lat,
-            lng: r.lng,
-            photoUrl: r.photoUrl || '',
-            photoUrls: r.photoUrls || [],
-            photoPool: [],
-          });
+    (async () => {
+      showToast('리뷰 데이터 자동 갱신 중...');
+      let updated = 0;
+      for (let i = 0; i < rests.length; i += 5) {
+        const batch = rests.slice(i, i + 5);
+        const results = await Promise.all(
+          batch.map(r => fetchReviewData(r.name, r.lat, r.lng))
+        );
+        results.forEach((data, j) => {
+          if (data) {
+            rests[i + j].rating = data.rating;
+            rests[i + j].reviewCount = data.reviewCount;
+            updated++;
+          }
         });
-      });
-
-      if (!allCurated.length) { showToast('식당을 찾지 못했습니다.'); return; }
-
-      saveCuratedData(editorAreaId, allCurated);
+        if (i + 5 < rests.length) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      saveCuratedData(editorAreaId, rests);
       dispatch({ type: 'BUMP_VERSION' });
-      dispatch({ type: 'SET_EDITING', id: null });
-      showToast(`✅ ${allCurated.length}개 식당을 불러왔습니다!`);
-    } catch (e: any) {
-      showToast('불러오기 실패: ' + e.message);
-    }
+      showToast(`✅ ${updated}/${rests.length}개 리뷰 갱신 완료!`);
+    })();
   }, [editorAreaId, dispatch, showToast]);
 
   const handleRefreshReviews = useCallback(async () => {
@@ -280,9 +244,6 @@ export default function RestaurantEditorTab() {
       </div>
 
       <div className="editor-toolbar">
-        <button className="admin-btn admin-btn--primary" onClick={handleFetchFromMaps}>
-          🗺 구글맵에서 불러오기
-        </button>
         <button className="admin-btn admin-btn--primary" onClick={handleRefreshReviews}>
           ★ 리뷰 갱신
         </button>
