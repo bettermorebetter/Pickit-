@@ -31,7 +31,7 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
     setTimeout(() => dispatch({ type: 'HIDE_TOAST' }), 2200);
   }, [dispatch]);
 
-  // Fetch photos on mount (if not cached)
+  // Fetch photos on mount (if not cached) and auto-set main/sub images from review photos
   useEffect(() => {
     if (state.photoCache[restaurantId]) return;
     const r = getCuratedDataRaw(areaId).find(x => x.id === restaurantId);
@@ -44,6 +44,17 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
       if (displaySlice.length > 0) {
         dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: displaySlice });
         dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: fullPool });
+
+        // Auto-set first review photos as main + sub images
+        const rests = getCuratedDataRaw(areaId);
+        const target = rests.find(x => x.id === restaurantId);
+        if (target) {
+          const autoPhotos = displaySlice.slice(0, IMG_MAX);
+          target.photoUrls = autoPhotos;
+          target.photoUrl = autoPhotos[0];
+          saveCuratedData(areaId, rests);
+          bump();
+        }
       }
     })();
 
