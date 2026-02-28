@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { fetchReviewData } from '../../services/adminPhotos.ts';
+import { fetchReviewData, fetchAllRestaurantData } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
@@ -76,27 +76,31 @@ export default function RestaurantEditorTab() {
     if (!rests.length) return;
 
     (async () => {
-      showToast('리뷰 데이터 자동 갱신 중...');
+      showToast('리뷰 + 이미지 자동 갱신 중...');
       let updated = 0;
-      for (let i = 0; i < rests.length; i += 5) {
-        const batch = rests.slice(i, i + 5);
+      for (let i = 0; i < rests.length; i += 3) {
+        const batch = rests.slice(i, i + 3);
         const results = await Promise.all(
-          batch.map(r => fetchReviewData(r.name, r.lat, r.lng))
+          batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
         );
         results.forEach((data, j) => {
           if (data) {
             rests[i + j].rating = data.rating;
             rests[i + j].reviewCount = data.reviewCount;
+            if (data.photoUrl) {
+              rests[i + j].photoUrl = data.photoUrl;
+              rests[i + j].photoUrls = data.photoUrls;
+            }
             updated++;
           }
         });
-        if (i + 5 < rests.length) {
-          await new Promise(resolve => setTimeout(resolve, 300));
+        saveCuratedData(editorAreaId, rests);
+        dispatch({ type: 'BUMP_VERSION' });
+        if (i + 3 < rests.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
-      saveCuratedData(editorAreaId, rests);
-      dispatch({ type: 'BUMP_VERSION' });
-      showToast(`✅ ${updated}/${rests.length}개 리뷰 갱신 완료!`);
+      showToast(`✅ ${updated}/${rests.length}개 식당 갱신 완료!`);
     })();
   }, [editorAreaId, dispatch, showToast]);
 
@@ -104,25 +108,27 @@ export default function RestaurantEditorTab() {
     const rests = getCuratedDataRaw(editorAreaId);
     if (!rests.length) return;
 
-    showToast('리뷰 데이터 갱신 중...');
+    showToast('리뷰 + 이미지 갱신 중...');
     let updated = 0;
 
-    // Process in batches of 5 to avoid rate limits
-    for (let i = 0; i < rests.length; i += 5) {
-      const batch = rests.slice(i, i + 5);
+    for (let i = 0; i < rests.length; i += 3) {
+      const batch = rests.slice(i, i + 3);
       const results = await Promise.all(
-        batch.map(r => fetchReviewData(r.name, r.lat, r.lng))
+        batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
       );
       results.forEach((data, j) => {
         if (data) {
           rests[i + j].rating = data.rating;
           rests[i + j].reviewCount = data.reviewCount;
+          if (data.photoUrl) {
+            rests[i + j].photoUrl = data.photoUrl;
+            rests[i + j].photoUrls = data.photoUrls;
+          }
           updated++;
         }
       });
-      // Small delay between batches
-      if (i + 5 < rests.length) {
-        await new Promise(resolve => setTimeout(resolve, 300));
+      if (i + 3 < rests.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
     }
 

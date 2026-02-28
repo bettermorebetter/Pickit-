@@ -171,6 +171,95 @@ export async function fetchReviewData(name: string, lat: number, lng: number): P
   return null;
 }
 
+/**
+ * Combined fetch: review data + main photo in one API call per restaurant.
+ * Returns rating, reviewCount, and first review photo URL.
+ */
+export interface RestaurantUpdateData {
+  rating: number;
+  reviewCount: number;
+  photoUrl: string;
+  photoUrls: string[];
+}
+
+async function fetchAllDataNew(name: string, lat: number, lng: number): Promise<RestaurantUpdateData | null> {
+  const Place = (google.maps.places as any).Place;
+
+  const found = await findPlaceId(name, lat, lng);
+  if (!found?.id) return null;
+
+  const place = new Place({ id: found.id });
+  await place.fetchFields({ fields: ['rating', 'userRatingCount', 'photos'] });
+
+  const { review, editorial } = partitionPhotos(place.photos || []);
+  const allUrls = [
+    ...review.map((p: any) => getPhotoUrl(p, true)).filter(Boolean) as string[],
+    ...editorial.map((p: any) => getPhotoUrl(p, true)).filter(Boolean) as string[],
+  ];
+  // Deduplicate
+  const seen = new Set<string>();
+  const unique = allUrls.filter(url => { if (seen.has(url)) return false; seen.add(url); return true; });
+
+  return {
+    rating: place.rating ?? 0,
+    reviewCount: place.userRatingCount ?? 0,
+    photoUrl: unique[0] || '',
+    photoUrls: unique.slice(0, 5),
+  };
+}
+
+function fetchAllDataOld(name: string, lat: number, lng: number): Promise<RestaurantUpdateData | null> {
+  return new Promise(resolve => {
+    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    const timer = setTimeout(() => resolve(null), 8000);
+
+    svc.findPlaceFromQuery(
+      { query: name, fields: ['place_id'] } as any,
+      (results, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.[0]) {
+          clearTimeout(timer);
+          resolve(null);
+          return;
+        }
+        svc.getDetails(
+          { placeId: results[0].place_id!, fields: ['rating', 'user_ratings_total', 'photos'] },
+          (place, detailStatus) => {
+            clearTimeout(timer);
+            if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !place) {
+              resolve(null);
+              return;
+            }
+            const all = (place.photos || [])
+              .map(p => getPhotoUrl(p, false))
+              .filter(Boolean) as string[];
+            // Move exterior photo to end
+            const reordered = all.length > 1 ? [...all.slice(1), all[0]] : all;
+            resolve({
+              rating: place.rating ?? 0,
+              reviewCount: (place as any).user_ratings_total ?? 0,
+              photoUrl: reordered[0] || '',
+              photoUrls: reordered.slice(0, 5),
+            });
+          }
+        );
+      }
+    );
+  });
+}
+
+/**
+ * Fetch review data + food photos for a restaurant in one call.
+ */
+export async function fetchAllRestaurantData(name: string, lat: number, lng: number): Promise<RestaurantUpdateData | null> {
+  try {
+    if (hasNewPlacesApi()) return await fetchAllDataNew(name, lat, lng);
+    if (hasOldPlacesApi()) return await fetchAllDataOld(name, lat, lng);
+  } catch (e) {
+    console.warn('Restaurant data fetch failed:', e);
+  }
+  return null;
+}
+
 /* ── Public API ────────────────────────────────────────────── */
 
 /**
