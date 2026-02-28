@@ -12,6 +12,7 @@ import {
   searchCategoryNewApi,
   searchCategoryOldApi,
 } from '../../services/places.ts';
+import { fetchReviewData } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
@@ -135,6 +136,37 @@ export default function RestaurantEditorTab() {
     }
   }, [editorAreaId, dispatch, showToast]);
 
+  const handleRefreshReviews = useCallback(async () => {
+    const rests = getCuratedDataRaw(editorAreaId);
+    if (!rests.length) return;
+
+    showToast('리뷰 데이터 갱신 중...');
+    let updated = 0;
+
+    // Process in batches of 5 to avoid rate limits
+    for (let i = 0; i < rests.length; i += 5) {
+      const batch = rests.slice(i, i + 5);
+      const results = await Promise.all(
+        batch.map(r => fetchReviewData(r.name, r.lat, r.lng))
+      );
+      results.forEach((data, j) => {
+        if (data) {
+          rests[i + j].rating = data.rating;
+          rests[i + j].reviewCount = data.reviewCount;
+          updated++;
+        }
+      });
+      // Small delay between batches
+      if (i + 5 < rests.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    saveCuratedData(editorAreaId, rests);
+    dispatch({ type: 'BUMP_VERSION' });
+    showToast(`✅ ${updated}/${rests.length}개 식당 리뷰 갱신 완료!`);
+  }, [editorAreaId, dispatch, showToast]);
+
   const handleExport = useCallback(() => {
     const data: Record<string, any> = {};
     Object.keys(CURATED_AREAS).forEach(areaId => {
@@ -250,6 +282,9 @@ export default function RestaurantEditorTab() {
       <div className="editor-toolbar">
         <button className="admin-btn admin-btn--primary" onClick={handleFetchFromMaps}>
           🗺 구글맵에서 불러오기
+        </button>
+        <button className="admin-btn admin-btn--primary" onClick={handleRefreshReviews}>
+          ★ 리뷰 갱신
         </button>
         <button className="admin-btn" onClick={handleAdd}>+ 식당 추가</button>
         <button className="admin-btn" onClick={handleExport}>📥 JSON 내보내기</button>

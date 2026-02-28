@@ -91,6 +91,78 @@ function fetchPhotosOld(name: string, lat: number, lng: number): Promise<string[
   });
 }
 
+/* ── Review data fetch ────────────────────────────────────── */
+
+export interface ReviewData {
+  rating: number;
+  reviewCount: number;
+}
+
+async function fetchReviewDataNew(name: string, lat: number, lng: number): Promise<ReviewData | null> {
+  const Place = (google.maps.places as any).Place;
+  const searchFn = Place.searchByText || Place.searchText;
+  if (!searchFn) return null;
+
+  const { places } = await searchFn.call(Place, {
+    textQuery: name,
+    fields: ['rating', 'userRatingCount', 'displayName'],
+    maxResultCount: 1,
+    locationBias: { center: { lat, lng }, radius: 300 },
+  });
+
+  if (!places?.[0]) return null;
+  const p = places[0];
+  return {
+    rating: p.rating ?? 0,
+    reviewCount: p.userRatingCount ?? 0,
+  };
+}
+
+function fetchReviewDataOld(name: string, lat: number, lng: number): Promise<ReviewData | null> {
+  return new Promise(resolve => {
+    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    const timer = setTimeout(() => resolve(null), 8000);
+
+    svc.findPlaceFromQuery(
+      { query: name, fields: ['place_id'] } as any,
+      (results, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.[0]) {
+          clearTimeout(timer);
+          resolve(null);
+          return;
+        }
+        svc.getDetails(
+          { placeId: results[0].place_id!, fields: ['rating', 'user_ratings_total'] },
+          (place, detailStatus) => {
+            clearTimeout(timer);
+            if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !place) {
+              resolve(null);
+              return;
+            }
+            resolve({
+              rating: place.rating ?? 0,
+              reviewCount: (place as any).user_ratings_total ?? 0,
+            });
+          }
+        );
+      }
+    );
+  });
+}
+
+/**
+ * Fetch real rating + reviewCount for a single restaurant from Google Places API.
+ */
+export async function fetchReviewData(name: string, lat: number, lng: number): Promise<ReviewData | null> {
+  try {
+    if (hasNewPlacesApi()) return await fetchReviewDataNew(name, lat, lng);
+    if (hasOldPlacesApi()) return await fetchReviewDataOld(name, lat, lng);
+  } catch (e) {
+    console.warn('Review data fetch failed:', e);
+  }
+  return null;
+}
+
 /* ── Public API ────────────────────────────────────────────── */
 
 /**
@@ -112,7 +184,8 @@ export async function fetchPhotosForRestaurant(
 }
 
 /**
- * Fetch more photos and return a shuffled display slice + accumulated pool.
+ * Fetch more photos and return a display slice + accumulated pool.
+ * Review photos are shown first (up to 15), then non-duplicate editorial photos.
  */
 export async function fetchMorePhotos(
   name: string,
@@ -120,26 +193,34 @@ export async function fetchMorePhotos(
   lng: number,
   existingPool: string[]
 ): Promise<{ displaySlice: string[]; fullPool: string[] }> {
+  const seen = new Set(existingPool);
   let newUrls = [...existingPool];
 
   try {
     if (hasNewPlacesApi()) {
       const photos = await fetchPhotosNew(name, lat, lng, 3);
       for (const url of photos) {
-        if (!newUrls.includes(url)) newUrls.push(url);
+        if (!seen.has(url)) {
+          seen.add(url);
+          newUrls.push(url);
+        }
       }
       newUrls = newUrls.slice(0, FETCH_LIMIT);
     } else if (hasOldPlacesApi()) {
       const fetched = await fetchPhotosOld(name, lat, lng);
       for (const url of fetched) {
-        if (!newUrls.includes(url)) newUrls.push(url);
+        if (!seen.has(url)) {
+          seen.add(url);
+          newUrls.push(url);
+        }
       }
     }
   } catch (e) {
     console.warn('Refresh photo fetch failed:', e);
   }
 
-  let displaySlice = shuffle(newUrls).slice(0, POOL_SIZE);
+  // Review photos already come first from sortPhotosByReview — keep that order, no shuffle
+  let displaySlice = newUrls.slice(0, POOL_SIZE);
 
   // Fallback to generic food photos if empty
   if (!displaySlice.length) {
