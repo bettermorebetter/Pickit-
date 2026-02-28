@@ -1,4 +1,4 @@
-/* Photo carousel — used in preview cards, tournament cards, and champion card */
+/* Photo carousel — swipeable, used in tournament cards, preview cards, and champion card */
 
 import { useState, useRef, useCallback } from 'react';
 
@@ -11,14 +11,57 @@ interface PhotoCarouselProps {
 
 export default function PhotoCarousel({ photos, alt, className = '', autoPlay = false }: PhotoCarouselProps) {
   const [idx, setIdx] = useState(0);
+  const [offsetX, setOffsetX] = useState(0);
+  const [swiping, setSwiping] = useState(false);
   const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const isHorizontalRef = useRef<boolean | null>(null);
 
   const show = useCallback((i: number) => {
     setIdx(((i % photos.length) + photos.length) % photos.length);
+    setOffsetX(0);
   }, [photos.length]);
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    startYRef.current = e.touches[0].clientY;
+    isHorizontalRef.current = null;
+    setSwiping(true);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!swiping) return;
+    const dx = e.touches[0].clientX - startXRef.current;
+    const dy = e.touches[0].clientY - startYRef.current;
+
+    // Determine direction on first significant move
+    if (isHorizontalRef.current === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+      isHorizontalRef.current = Math.abs(dx) > Math.abs(dy);
+    }
+
+    if (isHorizontalRef.current && photos.length > 1) {
+      e.stopPropagation();
+      setOffsetX(dx);
+    }
+  }, [swiping, photos.length]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!swiping) return;
+    setSwiping(false);
+
+    if (isHorizontalRef.current && photos.length > 1) {
+      if (Math.abs(offsetX) > 50) {
+        show(idx + (offsetX < 0 ? 1 : -1));
+      } else {
+        setOffsetX(0);
+      }
+    } else {
+      setOffsetX(0);
+    }
+    isHorizontalRef.current = null;
+  }, [swiping, offsetX, idx, show, photos.length]);
+
   if (autoPlay) {
-    // Auto-play carousel (for champion)
     return (
       <div className={`photo-carousel ${className}`}>
         {photos.map((url, i) => (
@@ -43,14 +86,31 @@ export default function PhotoCarousel({ photos, alt, className = '', autoPlay = 
     );
   }
 
-  // Interactive photo nav (for preview/tournament cards)
+  // Interactive swipeable photo nav
   return (
-    <>
-      <img
-        src={photos[idx]}
-        alt={alt}
-        className="card-photo"
-      />
+    <div
+      className="photo-carousel-swipe"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <div
+        className="photo-carousel-track"
+        style={{
+          transform: `translateX(calc(-${idx * 100}% + ${offsetX}px))`,
+          transition: swiping ? 'none' : 'transform 0.3s ease',
+        }}
+      >
+        {photos.map((url, i) => (
+          <img
+            key={i}
+            src={url}
+            alt={alt}
+            className="card-photo"
+            draggable={false}
+          />
+        ))}
+      </div>
       {photos.length > 1 && (
         <>
           <button
@@ -78,16 +138,6 @@ export default function PhotoCarousel({ photos, alt, className = '', autoPlay = 
           </div>
         </>
       )}
-      {/* Touch swipe handling via invisible touch area */}
-      <div
-        style={{ position: 'absolute', inset: 0, zIndex: 1 }}
-        onTouchStart={(e) => { startXRef.current = e.touches[0].clientX; }}
-        onTouchEnd={(e) => {
-          const d = startXRef.current - e.changedTouches[0].clientX;
-          if (Math.abs(d) > 40) show(idx + (d > 0 ? 1 : -1));
-        }}
-        onClick={() => { if (photos.length > 1) show(idx + 1); }}
-      />
-    </>
+    </div>
   );
 }
