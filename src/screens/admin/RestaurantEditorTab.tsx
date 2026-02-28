@@ -87,7 +87,9 @@ export default function RestaurantEditorTab() {
           if (data) {
             rests[i + j].rating = data.rating;
             rests[i + j].reviewCount = data.reviewCount;
-            if (data.photoUrl) {
+            // Only set photos if restaurant doesn't already have them (preserve manual edits)
+            const hasPhotos = rests[i + j].photoUrl && rests[i + j].photoUrls?.length > 0;
+            if (!hasPhotos && data.photoUrl) {
               rests[i + j].photoUrl = data.photoUrl;
               rests[i + j].photoUrls = data.photoUrls;
             }

@@ -45,10 +45,10 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
         dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: displaySlice });
         dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: fullPool });
 
-        // Auto-set first review photos as main + sub images
+        // Auto-set first review photos as main + sub images (only if not already set)
         const rests = getCuratedDataRaw(areaId);
         const target = rests.find(x => x.id === restaurantId);
-        if (target) {
+        if (target && !(target.photoUrl && target.photoUrls?.length > 0)) {
           const autoPhotos = displaySlice.slice(0, IMG_MAX);
           target.photoUrls = autoPhotos;
           target.photoUrl = autoPhotos[0];
