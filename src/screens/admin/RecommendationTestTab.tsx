@@ -67,7 +67,7 @@ export default function RecommendationTestTab() {
       return;
     }
 
-    const selected8 = applyBayesianSelection(categoryResults, lat, lng);
+    const selected8 = applyBayesianSelection(categoryResults);
     const selectedIds = selected8.map(r => r.id);
 
     dispatch({ type: 'SET_SEARCH_RESULTS', results: categoryResults, selectedIds });
