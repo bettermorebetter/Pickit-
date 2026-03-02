@@ -4,6 +4,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext.tsx';
+import { CURATED_AREAS } from '../data/restaurants.ts';
 import { makeEmojiMarkerIcon } from '../services/places.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
@@ -57,16 +58,11 @@ export default function MapScreen() {
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
 
-  const lat = state.pinLat!;
-  const lng = state.pinLng!;
-
-  const titleMap: Record<string, string> = {
-    gps: '내 주변 맛집',
-    pin: '선택 위치 맛집',
-    snu: '서울대입구역 맛집',
-    konkuk: '건대입구역 맛집',
-  };
-  const title = titleMap[state.locationMode || ''] || '주변 맛집';
+  const mode = state.locationMode;
+  const area = mode ? CURATED_AREAS[mode] : null;
+  const lat = area?.lat ?? 37.5665;
+  const lng = area?.lng ?? 126.9780;
+  const title = area ? `${area.label} 맛집` : '주변 맛집';
 
   useEffect(() => {
     if (!mapRef.current) return;

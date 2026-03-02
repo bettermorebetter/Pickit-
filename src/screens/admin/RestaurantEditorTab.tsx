@@ -6,11 +6,12 @@ import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
 import { fetchReviewData, fetchAllRestaurantData } from '../../services/adminPhotos.ts';
-import type { CuratedRestaurantSeed, FoodCategoryKey } from '../../types/index.ts';
+import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
 const CAT_LABELS: Record<string, string> = { korean: '한식', japanese: '일식', chinese: '중식', western: '양식' };
 const CAT_EMOJIS: Record<string, string> = { korean: '🍚', japanese: '🍣', chinese: '🥟', western: '🍔' };
+const AREA_IDS = Object.keys(CURATED_AREAS) as CuratedAreaId[];
 
 export default function RestaurantEditorTab() {
   const { state, dispatch } = useAdmin();
@@ -27,7 +28,7 @@ export default function RestaurantEditorTab() {
     setTimeout(() => dispatch({ type: 'HIDE_TOAST' }), 2200);
   }, [dispatch]);
 
-  const handleAreaChange = useCallback((areaId: 'snu' | 'konkuk') => {
+  const handleAreaChange = useCallback((areaId: CuratedAreaId) => {
     dispatch({ type: 'SET_EDITOR_AREA', areaId });
   }, [dispatch]);
 
@@ -181,19 +182,16 @@ export default function RestaurantEditorTab() {
     <div className="admin-tab-panel">
       <p className="admin-hint">지역별 식당 데이터를 직접 편집하세요. 변경사항은 이 기기에 자동 저장됩니다.</p>
 
-      <div className="editor-area-bar">
-        <button
-          className={`editor-area-btn${editorAreaId === 'snu' ? ' editor-area-btn--active' : ''}`}
-          onClick={() => handleAreaChange('snu')}
-        >
-          🎓 서울대입구역
-        </button>
-        <button
-          className={`editor-area-btn${editorAreaId === 'konkuk' ? ' editor-area-btn--active' : ''}`}
-          onClick={() => handleAreaChange('konkuk')}
-        >
-          🐄 건대입구역
-        </button>
+      <div className="editor-area-bar editor-area-bar--scrollable">
+        {AREA_IDS.map(id => (
+          <button
+            key={id}
+            className={`editor-area-btn${editorAreaId === id ? ' editor-area-btn--active' : ''}`}
+            onClick={() => handleAreaChange(id)}
+          >
+            {CURATED_AREAS[id].label}
+          </button>
+        ))}
       </div>
 
       <div className="editor-list">

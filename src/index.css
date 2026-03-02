@@ -478,10 +478,45 @@
   .mode-text { font-size: .9375rem; font-weight: 700; color: var(--color-text); }
   .mode-desc { font-size: .75rem; color: var(--color-text-muted); }
 
-  /* ── Pin map section ─────────────────────────────────────── */
-  .pin-map-section { margin-bottom: var(--sp-4); }
-  .map-container--pin { height: 220px; cursor: crosshair; margin-bottom: 0; }
-  @media (min-width: 400px) { .map-container--pin { height: 280px; } }
+  /* ── Area grid (location screen) ─────────────────────────── */
+  .area-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+  }
+
+  .btn--area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-1);
+    padding: var(--sp-4) var(--sp-3);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    cursor: pointer;
+    font: inherit;
+    transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    text-align: center;
+  }
+  .btn--area:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    background: #fff7ed;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn--area:active:not(:disabled) { transform: scale(.97); }
+  .btn--area--disabled {
+    opacity: .45;
+    cursor: not-allowed;
+    background: #f9fafb;
+  }
+
+  .area-emoji { font-size: 1.75rem; }
+  .area-label { font-size: .9375rem; font-weight: 700; color: var(--color-text); }
+  .area-desc { font-size: .75rem; color: var(--color-text-muted); }
 
   /* ── Location error ──────────────────────────────────────── */
   .location-error {
@@ -828,6 +863,12 @@
     gap: var(--sp-2);
     margin-bottom: var(--sp-5);
   }
+  .editor-area-bar--scrollable {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding-bottom: var(--sp-1);
+  }
   .editor-area-btn {
     padding: 10px 20px;
     border-radius: 20px;
@@ -836,6 +877,8 @@
     background: var(--color-surface);
     border: 2px solid var(--color-border);
     transition: border-color .15s, background .15s, color .15s;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .editor-area-btn:hover { border-color: var(--color-primary); background: #fff7ed; }
   .editor-area-btn--active {

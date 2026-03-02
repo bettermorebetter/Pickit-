@@ -3,7 +3,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
-import type { Restaurant } from '../types/index.ts';
+import type { Restaurant, CuratedAreaId } from '../types/index.ts';
 
 export interface AdminState {
   activeTab: 'search' | 'editor';
@@ -12,7 +12,7 @@ export interface AdminState {
   searchStatus: string | null;
   searchResults: Record<string, Restaurant[]>;
   selectedIds: string[];
-  editorAreaId: 'snu' | 'konkuk';
+  editorAreaId: CuratedAreaId;
   editingRestaurantId: string | null;
   photoCache: Record<string, string[]>;
   fullPhotoPool: Record<string, string[]>;
@@ -25,7 +25,7 @@ export type AdminAction =
   | { type: 'SET_SEARCH_LOCATION'; lat: number; lng: number }
   | { type: 'SET_SEARCH_STATUS'; status: string | null }
   | { type: 'SET_SEARCH_RESULTS'; results: Record<string, Restaurant[]>; selectedIds: string[] }
-  | { type: 'SET_EDITOR_AREA'; areaId: 'snu' | 'konkuk' }
+  | { type: 'SET_EDITOR_AREA'; areaId: CuratedAreaId }
   | { type: 'SET_EDITING'; id: string | null }
   | { type: 'SET_PHOTO_CACHE'; restaurantId: string; photos: string[] }
   | { type: 'SET_FULL_PHOTO_POOL'; restaurantId: string; photos: string[] }

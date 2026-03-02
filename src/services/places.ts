@@ -3,9 +3,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 import type { Restaurant, FoodCategoryKey } from '../types/index.ts';
-import { FOOD_CATEGORIES, GRADIENTS, computeBayesianScore, shuffle } from '../data/constants.ts';
-import { FOOD_PHOTO_URLS } from '../data/photos.ts';
-import { FALLBACK_RESTAURANTS } from '../data/restaurants.ts';
+import { FOOD_CATEGORIES, GRADIENTS, computeBayesianScore } from '../data/constants.ts';
 
 /* ── Helpers ──────────────────────────────────────────────── */
 
@@ -155,13 +153,11 @@ function applyStoredImages(restaurants: Restaurant[]): Restaurant[] {
 
 export function applyBayesianSelection(
   categoryResults: Record<string, Restaurant[]>,
-  lat: number,
-  lng: number
 ): Restaurant[] {
   const allRestaurants = Object.values(categoryResults).flat();
 
   if (allRestaurants.length === 0) {
-    return getFallbackRestaurantsByLocation(lat, lng);
+    return [];
   }
 
   const totalRatings = allRestaurants.reduce((sum, r) => sum + (r.rating || 0), 0);
@@ -200,110 +196,7 @@ export function applyBayesianSelection(
     }
   }
 
-  if (result.length < 8) {
-    const fallback = getFallbackRestaurantsByLocation(lat, lng);
-    for (const r of fallback) {
-      if (result.length >= 8) break;
-      if (!usedIds.has(r.id)) {
-        result.push(r);
-        usedIds.add(r.id);
-      }
-    }
-  }
-
   return applyStoredImages(result.slice(0, 8));
-}
-
-/* ── Fallback restaurants by location ────────────────────── */
-
-export function getFallbackRestaurantsByLocation(lat: number, lng: number): Restaurant[] {
-  const categoryMap: Record<string, FoodCategoryKey> = {
-    '한식': 'korean', '한우': 'korean', '한정식': 'korean', '갈비': 'korean', '삼겹살': 'korean',
-    '닭갈비': 'korean', '닭한마리': 'korean', '냉면': 'korean', '평양냉면': 'korean', '함흥냉면': 'korean',
-    '곰탕': 'korean', '해장국': 'korean', '갈비탕': 'korean', '육개장': 'korean', '순대국': 'korean',
-    '낙지볶음': 'korean', '닭볶음탕': 'korean', '곱창': 'korean', '분식': 'korean', '파전': 'korean',
-    '수제비': 'korean', '해산물': 'korean', '조개구이': 'korean', '칼국수': 'korean', '두부요리': 'korean',
-    '사찰음식': 'korean', '순대': 'korean', '육전': 'korean', '쭈꾸미': 'korean', '족발': 'korean',
-    '구이': 'korean', '소고기': 'korean', '생선조림': 'korean',
-    '스시': 'japanese', '일식': 'japanese',
-    '중식': 'chinese', '양꼬치': 'chinese',
-    '양식': 'western', '이탈리안': 'western', '브런치': 'western', '카페': 'western', '쌀국수': 'western',
-  };
-
-  const pool = shuffle([...FALLBACK_RESTAURANTS]).map(r => {
-    const foodCategory = categoryMap[r.category] || 'korean';
-    return {
-      id:           r.id,
-      placeId:      r.id,
-      name:         r.name,
-      foodCategory,
-      category:     FOOD_CATEGORIES[foodCategory]?.label || r.category,
-      rating:       r.rating,
-      reviewCount:  r.reviewCount,
-      address:      r.address,
-      lat:          r.lat !== undefined ? r.lat : lat + (Math.random() - 0.5) * 0.01,
-      lng:          r.lng !== undefined ? r.lng : lng + (Math.random() - 0.5) * 0.01,
-      emoji:        FOOD_CATEGORIES[foodCategory]?.emoji || r.emoji,
-      gradient:     r.gradient,
-      photoUrl:     r.photoUrl || null,
-      photoUrls:    r.photoUrls || [],
-      bayesianScore: 0,
-    } satisfies Restaurant;
-  });
-
-  const result: Restaurant[] = [];
-  const usedIds = new Set<string>();
-  const categoryCount: Record<string, number> = { korean: 0, japanese: 0, chinese: 0, western: 0 };
-
-  for (const r of pool) {
-    if (result.length >= 8) break;
-    const cat = r.foodCategory;
-    if ((categoryCount[cat] || 0) < 2) {
-      result.push(r);
-      usedIds.add(r.id);
-      categoryCount[cat] = (categoryCount[cat] || 0) + 1;
-    }
-  }
-
-  for (const r of pool) {
-    if (result.length >= 8) break;
-    if (!usedIds.has(r.id)) {
-      result.push(r);
-      usedIds.add(r.id);
-    }
-  }
-
-  return result.slice(0, 8);
-}
-
-/* ── Main fetch function ─────────────────────────────────── */
-
-export async function fetchRestaurantsByLocation(lat: number, lng: number): Promise<Restaurant[]> {
-  const categoryKeys = Object.keys(FOOD_CATEGORIES) as FoodCategoryKey[];
-  const categoryResults: Record<string, Restaurant[]> = {};
-
-  try {
-    if (hasNewPlacesApi()) {
-      const results = await Promise.all(
-        categoryKeys.map(key => searchCategoryNewApi(lat, lng, key))
-      );
-      categoryKeys.forEach((key, i) => { categoryResults[key] = results[i]; });
-    } else if (hasOldPlacesApi()) {
-      const service = new google.maps.places.PlacesService(document.createElement('div'));
-      const results = await Promise.all(
-        categoryKeys.map(key => searchCategoryOldApi(service, lat, lng, key))
-      );
-      categoryKeys.forEach((key, i) => { categoryResults[key] = results[i]; });
-    } else {
-      console.warn('No Places API available');
-      return getFallbackRestaurantsByLocation(lat, lng);
-    }
-  } catch (e) {
-    console.warn('Restaurant fetch failed:', e);
-    return getFallbackRestaurantsByLocation(lat, lng);
-  }
-
-  return applyBayesianSelection(categoryResults, lat, lng);
 }
 
 /* ── Emoji marker icon helper ────────────────────────────── */

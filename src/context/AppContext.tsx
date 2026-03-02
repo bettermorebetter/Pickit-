@@ -17,8 +17,6 @@ const initialBracket: BracketState = {
 const initialState: AppState = {
   screen: 'location',
   locationMode: null,
-  pinLat: null,
-  pinLng: null,
   restaurants: [],
   bracket: initialBracket,
   champion: null,
@@ -31,12 +29,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'SET_LOCATION_MODE':
       return { ...state, locationMode: action.mode };
-
-    case 'SET_PIN':
-      return { ...state, pinLat: action.lat, pinLng: action.lng };
-
-    case 'CLEAR_PIN':
-      return { ...state, pinLat: null, pinLng: null };
 
     case 'SET_RESTAURANTS':
       return { ...state, restaurants: action.restaurants };

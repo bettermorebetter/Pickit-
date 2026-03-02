@@ -50,23 +50,9 @@ export interface CuratedArea {
   restaurants: CuratedRestaurantSeed[];
 }
 
-export interface FallbackRestaurant {
-  id: string;
-  district: string;
-  name: string;
-  category: string;
-  rating: number;
-  reviewCount: number;
-  emoji: string;
-  gradient: string;
-  address: string;
-  lat: number;
-  lng: number;
-  photoUrl: string;
-  photoUrls: string[];
-}
+export type CuratedAreaId = 'snu' | 'konkuk' | 'hongdae' | 'ewha' | 'seongsu' | 'jamsil' | 'euljiro' | 'mullae' | 'sadang' | 'gangnam';
 
-export type LocationMode = 'gps' | 'pin' | 'snu' | 'konkuk' | null;
+export type LocationMode = CuratedAreaId | null;
 export type ScreenName = 'location' | 'map' | 'tournament' | 'result' | 'admin';
 
 export interface BracketState {
@@ -79,8 +65,6 @@ export interface BracketState {
 export interface AppState {
   screen: ScreenName;
   locationMode: LocationMode;
-  pinLat: number | null;
-  pinLng: number | null;
   restaurants: Restaurant[];
   bracket: BracketState;
   champion: Restaurant | null;
@@ -89,8 +73,6 @@ export interface AppState {
 export type AppAction =
   | { type: 'SET_SCREEN'; screen: ScreenName }
   | { type: 'SET_LOCATION_MODE'; mode: LocationMode }
-  | { type: 'SET_PIN'; lat: number; lng: number }
-  | { type: 'CLEAR_PIN' }
   | { type: 'SET_RESTAURANTS'; restaurants: Restaurant[] }
   | { type: 'INIT_BRACKET'; restaurants: Restaurant[] }
   | { type: 'PICK_WINNER'; winner: Restaurant }
