@@ -18,7 +18,8 @@ const AREA_CONFIGS: { id: CuratedAreaId; emoji: string; label: string; desc: str
   { id: 'euljiro', emoji: '🏮', label: '을지로역',     desc: '을지로 맛집' },
   { id: 'mullae',  emoji: '🔧', label: '문래역',       desc: '문래 맛집' },
   { id: 'sadang',  emoji: '🚇', label: '사당역',       desc: '사당 맛집' },
-  { id: 'gangnam', emoji: '💎', label: '강남역',       desc: '강남 맛집' },
+  { id: 'gangnam',   emoji: '💎', label: '강남역',       desc: '강남 맛집' },
+  { id: 'sookmyung', emoji: '🎀', label: '숙대입구역',   desc: '숙대 맛집' },
 ];
 
 export default function LocationScreen() {
