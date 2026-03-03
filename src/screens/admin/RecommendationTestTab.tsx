@@ -51,14 +51,21 @@ export default function RecommendationTestTab() {
     const categoryResults: Record<string, Restaurant[]> = {};
 
     try {
+      let searched = false;
       if (hasNewPlacesApi()) {
-        const res = await Promise.all(keys.map(k => searchCategoryNewApi(lat, lng, k)));
-        keys.forEach((k, i) => { categoryResults[k] = res[i]; });
-      } else if (hasOldPlacesApi()) {
+        try {
+          const res = await Promise.all(keys.map(k => searchCategoryNewApi(lat, lng, k)));
+          keys.forEach((k, i) => { categoryResults[k] = res[i]; });
+          searched = true;
+        } catch (_e) { /* fall through to old API */ }
+      }
+      if (!searched && hasOldPlacesApi()) {
         const svc = new google.maps.places.PlacesService(document.createElement('div'));
         const res = await Promise.all(keys.map(k => searchCategoryOldApi(svc, lat, lng, k)));
         keys.forEach((k, i) => { categoryResults[k] = res[i]; });
-      } else {
+        searched = true;
+      }
+      if (!searched) {
         dispatch({ type: 'SET_SEARCH_STATUS', status: 'Places API를 사용할 수 없습니다.' });
         return;
       }

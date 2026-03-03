@@ -163,7 +163,10 @@ function fetchReviewDataOld(name: string, lat: number, lng: number): Promise<Rev
  */
 export async function fetchReviewData(name: string, lat: number, lng: number): Promise<ReviewData | null> {
   try {
-    if (hasNewPlacesApi()) return await fetchReviewDataNew(name, lat, lng);
+    if (hasNewPlacesApi()) {
+      try { return await fetchReviewDataNew(name, lat, lng); }
+      catch (_e) { /* fall through to old API */ }
+    }
     if (hasOldPlacesApi()) return await fetchReviewDataOld(name, lat, lng);
   } catch (e) {
     console.warn('Review data fetch failed:', e);
@@ -252,7 +255,10 @@ function fetchAllDataOld(name: string, lat: number, lng: number): Promise<Restau
  */
 export async function fetchAllRestaurantData(name: string, lat: number, lng: number): Promise<RestaurantUpdateData | null> {
   try {
-    if (hasNewPlacesApi()) return await fetchAllDataNew(name, lat, lng);
+    if (hasNewPlacesApi()) {
+      try { return await fetchAllDataNew(name, lat, lng); }
+      catch (_e) { /* fall through to old API */ }
+    }
     if (hasOldPlacesApi()) return await fetchAllDataOld(name, lat, lng);
   } catch (e) {
     console.warn('Restaurant data fetch failed:', e);
@@ -275,7 +281,15 @@ export async function fetchPhotosForRestaurant(
     let result: { reviewUrls: string[]; editorialUrls: string[] };
 
     if (hasNewPlacesApi()) {
-      result = await fetchPhotosViaFetchFields(name, lat, lng);
+      try {
+        result = await fetchPhotosViaFetchFields(name, lat, lng);
+      } catch (_e) {
+        if (hasOldPlacesApi()) {
+          result = await fetchPhotosOld(name, lat, lng);
+        } else {
+          return empty;
+        }
+      }
     } else if (hasOldPlacesApi()) {
       result = await fetchPhotosOld(name, lat, lng);
     } else {
@@ -331,12 +345,15 @@ export async function fetchMorePhotos(
 
   // Pool too small — re-fetch to try to get more
   try {
-    let result: { reviewUrls: string[]; editorialUrls: string[] };
+    let result: { reviewUrls: string[]; editorialUrls: string[] } | null = null;
     if (hasNewPlacesApi()) {
-      result = await fetchPhotosViaFetchFields(name, lat, lng);
-    } else if (hasOldPlacesApi()) {
+      try { result = await fetchPhotosViaFetchFields(name, lat, lng); }
+      catch (_e) { /* fall through to old API */ }
+    }
+    if (!result && hasOldPlacesApi()) {
       result = await fetchPhotosOld(name, lat, lng);
-    } else {
+    }
+    if (!result) {
       result = { reviewUrls: [], editorialUrls: [] };
     }
 
