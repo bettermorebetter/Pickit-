@@ -2,12 +2,34 @@
    Restaurant Editor Tab — curated restaurant CRUD
 ══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { fetchReviewData, fetchAllRestaurantData } from '../../services/adminPhotos.ts';
+import { fetchRestaurantByPlaceId } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
+
+/* ── Google Maps URL → Place ID extraction ─────────────── */
+
+function extractPlaceId(url: string): string | null {
+  // Pattern 1: ChIJ... or similar place_id in URL params
+  const paramMatch = url.match(/place_id[=:]([A-Za-z0-9_-]+)/);
+  if (paramMatch) return paramMatch[1];
+
+  // Pattern 2: /place/.../ data segment with !1s prefix (e.g. !1sChIJ...)
+  const dataMatch = url.match(/!1s(ChIJ[A-Za-z0-9_-]+)/);
+  if (dataMatch) return dataMatch[1];
+
+  // Pattern 3: hex-encoded ftid (e.g. !1s0x357ca...:0x...)
+  const ftidMatch = url.match(/!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i);
+  if (ftidMatch) return ftidMatch[1];
+
+  // Pattern 4: ?ftid=0x...:0x...
+  const ftidParam = url.match(/ftid=(0x[0-9a-f]+:0x[0-9a-f]+)/i);
+  if (ftidParam) return ftidParam[1];
+
+  return null;
+}
 
 const CAT_LABELS: Record<string, string> = { korean: '한식', japanese: '일식', chinese: '중식', western: '양식' };
 const CAT_EMOJIS: Record<string, string> = { korean: '🍚', japanese: '🍣', chinese: '🥟', western: '🍔' };
@@ -44,147 +66,48 @@ export default function RestaurantEditorTab() {
     if (editingRestaurantId === id) dispatch({ type: 'SET_EDITING', id: null });
   }, [editorAreaId, editingRestaurantId, dispatch]);
 
-  const handleAdd = useCallback(() => {
+  const handleAdd = useCallback(async () => {
+    const url = prompt('구글맵 URL을 붙여넣으세요:');
+    if (!url?.trim()) return;
+
+    // Extract Place ID from Google Maps URL
+    const placeId = extractPlaceId(url.trim());
+    if (!placeId) {
+      showToast('Place ID를 추출할 수 없습니다. URL을 확인하세요.');
+      return;
+    }
+
+    showToast('식당 정보를 가져오는 중...');
+    const data = await fetchRestaurantByPlaceId(placeId);
+    if (!data) {
+      showToast('식당 정보를 가져올 수 없습니다.');
+      return;
+    }
+
+    // Classify photos: food photos first
+    const { reorderByFood } = await import('../../services/foodClassifier.ts');
+    const { urls: orderedPhotos } = await reorderByFood(data.photoUrls);
+
     const rests = getCuratedDataRaw(editorAreaId);
-    const area = CURATED_AREAS[editorAreaId];
-    const newId = `${editorAreaId}_new_${Date.now()}`;
+    const newId = `${editorAreaId}_${Date.now()}`;
     const newRest: CuratedRestaurantSeed = {
       id: newId,
-      name: '새 식당',
+      name: data.name,
       category: 'korean' as FoodCategoryKey,
-      address: '',
-      rating: 4.0,
-      reviewCount: 100,
-      photoUrl: '',
-      photoUrls: [],
-      photoPool: [],
-      lat: area ? area.lat + (Math.random() - 0.5) * 0.006 : 37.5,
-      lng: area ? area.lng + (Math.random() - 0.5) * 0.006 : 127.0,
+      address: data.address,
+      rating: data.rating,
+      reviewCount: data.reviewCount,
+      photoUrl: orderedPhotos[0] || '',
+      photoUrls: orderedPhotos.slice(0, 5),
+      photoPool: orderedPhotos,
+      lat: data.lat,
+      lng: data.lng,
     };
     rests.push(newRest);
     saveCuratedData(editorAreaId, rests);
     dispatch({ type: 'BUMP_VERSION' });
     dispatch({ type: 'SET_EDITING', id: newId });
-  }, [editorAreaId, dispatch]);
-
-  // Auto-fetch review data on first load per area
-  const fetchedAreas = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (fetchedAreas.current.has(editorAreaId)) return;
-    fetchedAreas.current.add(editorAreaId);
-
-    const rests = getCuratedDataRaw(editorAreaId);
-    if (!rests.length) return;
-
-    (async () => {
-      // Preload food classifier model in parallel with data fetching
-      const { preloadModel, reorderByFood } = await import('../../services/foodClassifier.ts');
-      preloadModel();
-
-      showToast('리뷰 + 이미지 자동 갱신 중...');
-      let updated = 0;
-      let classifiedCount = 0;
-      for (let i = 0; i < rests.length; i += 3) {
-        const batch = rests.slice(i, i + 3);
-        const results = await Promise.all(
-          batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
-        );
-        for (let j = 0; j < results.length; j++) {
-          const data = results[j];
-          if (!data) continue;
-          rests[i + j].rating = data.rating;
-          rests[i + j].reviewCount = data.reviewCount;
-          // Only set photos if restaurant doesn't already have them (preserve manual edits)
-          const hasPhotos = rests[i + j].photoUrl && rests[i + j].photoUrls?.length > 0;
-          if (!hasPhotos && data.photoUrls.length > 0) {
-            // Classify photos: food photos first
-            const { urls, foodCount } = await reorderByFood(data.photoUrls);
-            rests[i + j].photoUrls = urls;
-            rests[i + j].photoUrl = urls[0] || '';
-            if (foodCount > 0) classifiedCount++;
-          }
-          updated++;
-        }
-        saveCuratedData(editorAreaId, rests);
-        dispatch({ type: 'BUMP_VERSION' });
-        if (i + 3 < rests.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      }
-      showToast(`✅ ${updated}개 갱신, 🍔 ${classifiedCount}개 음식사진 자동 설정!`);
-    })();
-  }, [editorAreaId, dispatch, showToast]);
-
-  const handleRefreshReviews = useCallback(async () => {
-    const rests = getCuratedDataRaw(editorAreaId);
-    if (!rests.length) return;
-
-    const { reorderByFood } = await import('../../services/foodClassifier.ts');
-
-    showToast('리뷰 + 이미지 갱신 중...');
-    let updated = 0;
-    let classifiedCount = 0;
-
-    for (let i = 0; i < rests.length; i += 3) {
-      const batch = rests.slice(i, i + 3);
-      const results = await Promise.all(
-        batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
-      );
-      for (let j = 0; j < results.length; j++) {
-        const data = results[j];
-        if (!data) continue;
-        rests[i + j].rating = data.rating;
-        rests[i + j].reviewCount = data.reviewCount;
-        if (data.photoUrls.length > 0) {
-          const { urls, foodCount } = await reorderByFood(data.photoUrls);
-          rests[i + j].photoUrls = urls;
-          rests[i + j].photoUrl = urls[0] || '';
-          if (foodCount > 0) classifiedCount++;
-        }
-        updated++;
-      }
-      if (i + 3 < rests.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    saveCuratedData(editorAreaId, rests);
-    dispatch({ type: 'BUMP_VERSION' });
-    showToast(`✅ ${updated}개 갱신, 🍔 ${classifiedCount}개 음식사진 자동 설정!`);
-  }, [editorAreaId, dispatch, showToast]);
-
-  const handleExport = useCallback(() => {
-    const data: Record<string, any> = {};
-    Object.keys(CURATED_AREAS).forEach(areaId => {
-      data[areaId] = { ...CURATED_AREAS[areaId], restaurants: getCuratedDataRaw(areaId) };
-    });
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'restaurants-curated.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast('JSON 파일을 다운로드했습니다.');
-  }, [showToast]);
-
-  const handleReset = useCallback(() => {
-    const label = CURATED_AREAS[editorAreaId]?.label || editorAreaId;
-    if (!confirm(`"${label}" 지역의 식당 데이터를 기본값으로 복원하시겠습니까?\n(직접 수정한 내용이 모두 삭제됩니다)`)) return;
-    try {
-      const stored = JSON.parse(localStorage.getItem('pickit_curated_data') || '{}');
-      delete stored[editorAreaId];
-      localStorage.setItem('pickit_curated_data', JSON.stringify(stored));
-    } catch (_e) {}
-    // Reset KV to seed data
-    const area = CURATED_AREAS[editorAreaId];
-    if (area) {
-      import('../../services/kvStorage.ts').then(m => m.saveAreaToKV(editorAreaId, area.restaurants)).catch(() => {});
-    }
-    dispatch({ type: 'BUMP_VERSION' });
-    dispatch({ type: 'SET_EDITING', id: null });
-    showToast('기본값으로 복원되었습니다.');
+    showToast(`✅ "${data.name}" 추가 완료!`);
   }, [editorAreaId, dispatch, showToast]);
 
   const handleClosePanel = useCallback(() => {
@@ -268,12 +191,7 @@ export default function RestaurantEditorTab() {
       </div>
 
       <div className="editor-toolbar">
-        <button className="admin-btn admin-btn--primary" onClick={handleRefreshReviews}>
-          ★ 리뷰 갱신
-        </button>
-        <button className="admin-btn" onClick={handleAdd}>+ 식당 추가</button>
-        <button className="admin-btn" onClick={handleExport}>📥 JSON 내보내기</button>
-        <button className="admin-btn editor-btn--danger" onClick={handleReset}>↩ 기본값 복원</button>
+        <button className="admin-btn admin-btn--primary" onClick={handleAdd}>+ 식당 추가</button>
       </div>
 
       {editingRestaurantId && (

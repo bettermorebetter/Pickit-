@@ -26,20 +26,20 @@ function AdminContent() {
 
         <div className="admin-tabs" role="tablist">
           <button
-            className={`admin-tab${state.activeTab === 'search' ? ' admin-tab--active' : ''}`}
-            role="tab"
-            aria-selected={state.activeTab === 'search'}
-            onClick={() => dispatch({ type: 'SET_TAB', tab: 'search' })}
-          >
-            🔍 식당 검색
-          </button>
-          <button
             className={`admin-tab${state.activeTab === 'editor' ? ' admin-tab--active' : ''}`}
             role="tab"
             aria-selected={state.activeTab === 'editor'}
             onClick={() => dispatch({ type: 'SET_TAB', tab: 'editor' })}
           >
             ✏️ 식당 편집
+          </button>
+          <button
+            className={`admin-tab${state.activeTab === 'search' ? ' admin-tab--active' : ''}`}
+            role="tab"
+            aria-selected={state.activeTab === 'search'}
+            onClick={() => dispatch({ type: 'SET_TAB', tab: 'search' })}
+          >
+            🔍 식당 검색
           </button>
         </div>
 

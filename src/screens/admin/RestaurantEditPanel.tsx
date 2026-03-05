@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
+import { fetchAllRestaurantData } from '../../services/adminPhotos.ts';
 import type { FoodCategoryKey } from '../../types/index.ts';
 import ImageSection from './ImageSection.tsx';
 
@@ -36,7 +37,34 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
     setLat(r.lat != null ? String(r.lat) : '');
     setLng(r.lng != null ? String(r.lng) : '');
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [areaId, restaurantId]);
+
+    // Auto-fetch data for restaurants missing photos (first visit)
+    const hasPhotos = r.photoUrl || (r.photoUrls && r.photoUrls.length > 0);
+    if (!hasPhotos && r.lat && r.lng) {
+      (async () => {
+        const data = await fetchAllRestaurantData(r.name, r.lat, r.lng);
+        if (!data || !data.photoUrls.length) return;
+
+        const { reorderByFood } = await import('../../services/foodClassifier.ts');
+        const { urls } = await reorderByFood(data.photoUrls);
+
+        const fresh = getCuratedDataRaw(areaId);
+        const target = fresh.find(x => x.id === restaurantId);
+        if (!target) return;
+
+        target.rating = data.rating;
+        target.reviewCount = data.reviewCount;
+        target.photoUrls = urls.slice(0, 5);
+        target.photoUrl = urls[0] || '';
+        saveCuratedData(areaId, fresh);
+
+        // Update local form state
+        setRating(String(data.rating));
+        setReviewCount(String(data.reviewCount));
+        onSaved();
+      })();
+    }
+  }, [areaId, restaurantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = useCallback(() => {
     const rests = getCuratedDataRaw(areaId);

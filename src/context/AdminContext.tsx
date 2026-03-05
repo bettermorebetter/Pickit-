@@ -34,7 +34,7 @@ export type AdminAction =
   | { type: 'BUMP_VERSION' };
 
 const initialState: AdminState = {
-  activeTab: 'search',
+  activeTab: 'editor',
   searchLat: null,
   searchLng: null,
   searchStatus: null,

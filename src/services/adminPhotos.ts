@@ -266,6 +266,84 @@ export async function fetchAllRestaurantData(name: string, lat: number, lng: num
   return null;
 }
 
+/* ── Fetch by Place ID ─────────────────────────────────────── */
+
+export interface PlaceIdData {
+  name: string;
+  rating: number;
+  reviewCount: number;
+  address: string;
+  lat: number;
+  lng: number;
+  photoUrls: string[];
+}
+
+async function fetchByPlaceIdNew(placeId: string): Promise<PlaceIdData | null> {
+  const Place = (google.maps.places as any).Place;
+  const place = new Place({ id: placeId });
+  await place.fetchFields({
+    fields: ['displayName', 'rating', 'userRatingCount', 'formattedAddress', 'location', 'photos'],
+  });
+
+  const photos = (place.photos || [])
+    .map((p: any) => getPhotoUrl(p, true))
+    .filter(Boolean) as string[];
+
+  return {
+    name: place.displayName || '',
+    rating: place.rating ?? 0,
+    reviewCount: place.userRatingCount ?? 0,
+    address: place.formattedAddress || '',
+    lat: place.location?.lat() ?? 0,
+    lng: place.location?.lng() ?? 0,
+    photoUrls: photos.slice(0, 10),
+  };
+}
+
+function fetchByPlaceIdOld(placeId: string): Promise<PlaceIdData | null> {
+  return new Promise(resolve => {
+    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    const timer = setTimeout(() => resolve(null), 8000);
+
+    svc.getDetails(
+      { placeId, fields: ['name', 'rating', 'user_ratings_total', 'formatted_address', 'geometry', 'photos'] },
+      (place, status) => {
+        clearTimeout(timer);
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !place) {
+          resolve(null);
+          return;
+        }
+        const photos = (place.photos || [])
+          .map(p => getPhotoUrl(p, false))
+          .filter(Boolean) as string[];
+
+        resolve({
+          name: place.name || '',
+          rating: place.rating ?? 0,
+          reviewCount: (place as any).user_ratings_total ?? 0,
+          address: (place as any).formatted_address || '',
+          lat: place.geometry?.location?.lat() ?? 0,
+          lng: place.geometry?.location?.lng() ?? 0,
+          photoUrls: photos.slice(0, 10),
+        });
+      }
+    );
+  });
+}
+
+export async function fetchRestaurantByPlaceId(placeId: string): Promise<PlaceIdData | null> {
+  try {
+    if (hasNewPlacesApi()) {
+      try { return await fetchByPlaceIdNew(placeId); }
+      catch (_e) { /* fall through to old API */ }
+    }
+    if (hasOldPlacesApi()) return await fetchByPlaceIdOld(placeId);
+  } catch (e) {
+    console.warn('fetchRestaurantByPlaceId failed:', e);
+  }
+  return null;
+}
+
 /* ── Public API ────────────────────────────────────────────── */
 
 /**
