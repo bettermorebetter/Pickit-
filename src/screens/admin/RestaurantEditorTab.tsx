@@ -2,7 +2,7 @@
    Restaurant Editor Tab — curated restaurant CRUD
 ══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
 import { fetchAllRestaurantData, fetchRestaurantByPlaceId } from '../../services/adminPhotos.ts';
@@ -157,6 +157,47 @@ export default function RestaurantEditorTab() {
     })();
   }, [editorAreaId, dispatch, showToast]);
 
+  // Bulk photo update: fetch & classify photos for ALL restaurants in current area
+  const [bulkProgress, setBulkProgress] = useState('');
+  const handleBulkPhotoUpdate = useCallback(async () => {
+    const rests = getCuratedDataRaw(editorAreaId);
+    if (!rests.length) return;
+
+    const { reorderByFood } = await import('../../services/foodClassifier.ts');
+    setBulkProgress(`0/${rests.length}`);
+    let updated = 0;
+
+    for (let i = 0; i < rests.length; i += 3) {
+      const batch = rests.slice(i, i + 3);
+      const results = await Promise.all(
+        batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
+      );
+      const fresh = getCuratedDataRaw(editorAreaId);
+      for (let j = 0; j < batch.length; j++) {
+        const data = results[j];
+        if (!data || !data.photoUrls.length) continue;
+        const target = fresh.find(r => r.id === batch[j].id);
+        if (!target) continue;
+
+        const { urls } = await reorderByFood(data.photoUrls);
+        target.photoUrls = urls.slice(0, 5);
+        target.photoUrl = urls[0] || '';
+        target.rating = data.rating;
+        target.reviewCount = data.reviewCount;
+        updated++;
+      }
+      saveCuratedData(editorAreaId, fresh);
+      dispatch({ type: 'BUMP_VERSION' });
+      setBulkProgress(`${Math.min(i + 3, rests.length)}/${rests.length}`);
+
+      if (i + 3 < rests.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    setBulkProgress('');
+    showToast(`✅ ${updated}/${rests.length} 식당 사진 업데이트!`);
+  }, [editorAreaId, dispatch, showToast]);
+
   const handleClosePanel = useCallback(() => {
     dispatch({ type: 'SET_EDITING', id: null });
   }, [dispatch]);
@@ -239,6 +280,13 @@ export default function RestaurantEditorTab() {
 
       <div className="editor-toolbar">
         <button className="admin-btn admin-btn--primary" onClick={handleAdd}>+ 식당 추가</button>
+        <button
+          className="admin-btn"
+          onClick={handleBulkPhotoUpdate}
+          disabled={!!bulkProgress}
+        >
+          {bulkProgress ? `📷 ${bulkProgress}` : '📷 전체 사진 업데이트'}
+        </button>
       </div>
 
       {editingRestaurantId && (
