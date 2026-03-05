@@ -212,7 +212,8 @@ export default function RestaurantEditorTab() {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const dateStr = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const dateStr = `${now.toISOString().slice(0, 10)}_${now.toTimeString().slice(0, 5).replace(':', '')}`;
     a.href = url;
     a.download = `pickit-backup-${dateStr}.json`;
     a.click();
