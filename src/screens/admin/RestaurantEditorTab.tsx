@@ -77,33 +77,41 @@ export default function RestaurantEditorTab() {
     if (!rests.length) return;
 
     (async () => {
+      // Preload food classifier model in parallel with data fetching
+      const { preloadModel, reorderByFood } = await import('../../services/foodClassifier.ts');
+      preloadModel();
+
       showToast('리뷰 + 이미지 자동 갱신 중...');
       let updated = 0;
+      let classifiedCount = 0;
       for (let i = 0; i < rests.length; i += 3) {
         const batch = rests.slice(i, i + 3);
         const results = await Promise.all(
           batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
         );
-        results.forEach((data, j) => {
-          if (data) {
-            rests[i + j].rating = data.rating;
-            rests[i + j].reviewCount = data.reviewCount;
-            // Only set photos if restaurant doesn't already have them (preserve manual edits)
-            const hasPhotos = rests[i + j].photoUrl && rests[i + j].photoUrls?.length > 0;
-            if (!hasPhotos && data.photoUrl) {
-              rests[i + j].photoUrl = data.photoUrl;
-              rests[i + j].photoUrls = data.photoUrls;
-            }
-            updated++;
+        for (let j = 0; j < results.length; j++) {
+          const data = results[j];
+          if (!data) continue;
+          rests[i + j].rating = data.rating;
+          rests[i + j].reviewCount = data.reviewCount;
+          // Only set photos if restaurant doesn't already have them (preserve manual edits)
+          const hasPhotos = rests[i + j].photoUrl && rests[i + j].photoUrls?.length > 0;
+          if (!hasPhotos && data.photoUrls.length > 0) {
+            // Classify photos: food photos first
+            const { urls, foodCount } = await reorderByFood(data.photoUrls);
+            rests[i + j].photoUrls = urls;
+            rests[i + j].photoUrl = urls[0] || '';
+            if (foodCount > 0) classifiedCount++;
           }
-        });
+          updated++;
+        }
         saveCuratedData(editorAreaId, rests);
         dispatch({ type: 'BUMP_VERSION' });
         if (i + 3 < rests.length) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
-      showToast(`✅ ${updated}/${rests.length}개 식당 갱신 완료!`);
+      showToast(`✅ ${updated}개 갱신, 🍔 ${classifiedCount}개 음식사진 자동 설정!`);
     })();
   }, [editorAreaId, dispatch, showToast]);
 
@@ -111,25 +119,30 @@ export default function RestaurantEditorTab() {
     const rests = getCuratedDataRaw(editorAreaId);
     if (!rests.length) return;
 
+    const { reorderByFood } = await import('../../services/foodClassifier.ts');
+
     showToast('리뷰 + 이미지 갱신 중...');
     let updated = 0;
+    let classifiedCount = 0;
 
     for (let i = 0; i < rests.length; i += 3) {
       const batch = rests.slice(i, i + 3);
       const results = await Promise.all(
         batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
       );
-      results.forEach((data, j) => {
-        if (data) {
-          rests[i + j].rating = data.rating;
-          rests[i + j].reviewCount = data.reviewCount;
-          if (data.photoUrl) {
-            rests[i + j].photoUrl = data.photoUrl;
-            rests[i + j].photoUrls = data.photoUrls;
-          }
-          updated++;
+      for (let j = 0; j < results.length; j++) {
+        const data = results[j];
+        if (!data) continue;
+        rests[i + j].rating = data.rating;
+        rests[i + j].reviewCount = data.reviewCount;
+        if (data.photoUrls.length > 0) {
+          const { urls, foodCount } = await reorderByFood(data.photoUrls);
+          rests[i + j].photoUrls = urls;
+          rests[i + j].photoUrl = urls[0] || '';
+          if (foodCount > 0) classifiedCount++;
         }
-      });
+        updated++;
+      }
       if (i + 3 < rests.length) {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
@@ -137,7 +150,7 @@ export default function RestaurantEditorTab() {
 
     saveCuratedData(editorAreaId, rests);
     dispatch({ type: 'BUMP_VERSION' });
-    showToast(`✅ ${updated}/${rests.length}개 식당 리뷰 갱신 완료!`);
+    showToast(`✅ ${updated}개 갱신, 🍔 ${classifiedCount}개 음식사진 자동 설정!`);
   }, [editorAreaId, dispatch, showToast]);
 
   const handleExport = useCallback(() => {
@@ -164,6 +177,11 @@ export default function RestaurantEditorTab() {
       delete stored[editorAreaId];
       localStorage.setItem('pickit_curated_data', JSON.stringify(stored));
     } catch (_e) {}
+    // Reset KV to seed data
+    const area = CURATED_AREAS[editorAreaId];
+    if (area) {
+      import('../../services/kvStorage.ts').then(m => m.saveAreaToKV(editorAreaId, area.restaurants)).catch(() => {});
+    }
     dispatch({ type: 'BUMP_VERSION' });
     dispatch({ type: 'SET_EDITING', id: null });
     showToast('기본값으로 복원되었습니다.');

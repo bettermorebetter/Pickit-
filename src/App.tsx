@@ -8,6 +8,8 @@ import MapScreen from './screens/MapScreen.tsx';
 import TournamentScreen from './screens/TournamentScreen.tsx';
 import ResultScreen from './screens/ResultScreen.tsx';
 import AdminScreen from './screens/AdminScreen.tsx';
+// Hydrate localStorage from KV on app start (non-blocking)
+import('./services/kvStorage.ts').then(m => m.hydrateFromKV()).catch(() => {});
 
 function ScreenRouter() {
   const { state } = useApp();

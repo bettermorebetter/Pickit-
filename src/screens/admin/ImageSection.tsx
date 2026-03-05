@@ -45,13 +45,20 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
         dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: displaySlice });
         dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: fullPool });
 
-        // Auto-set first review photos as main + sub images (only if not already set)
+        // Auto-set food photos as main + sub images (only if not already set)
         const rests = getCuratedDataRaw(areaId);
         const target = rests.find(x => x.id === restaurantId);
         if (target && !(target.photoUrl && target.photoUrls?.length > 0)) {
-          const autoPhotos = displaySlice.slice(0, IMG_MAX);
-          target.photoUrls = autoPhotos;
-          target.photoUrl = autoPhotos[0];
+          const candidates = displaySlice.slice(0, IMG_MAX);
+          try {
+            const { reorderByFood } = await import('../../services/foodClassifier.ts');
+            const { urls } = await reorderByFood(candidates);
+            target.photoUrls = urls;
+            target.photoUrl = urls[0] || candidates[0];
+          } catch (_e) {
+            target.photoUrls = candidates;
+            target.photoUrl = candidates[0];
+          }
           saveCuratedData(areaId, rests);
           bump();
         }

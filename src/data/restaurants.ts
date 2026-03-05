@@ -681,6 +681,8 @@ export function saveCuratedData(areaId: string, restaurants: CuratedRestaurantSe
   } catch (e) {
     console.warn('Failed to save curated data:', e);
   }
+  // Sync to KV (fire-and-forget)
+  import('../services/kvStorage.ts').then(m => m.saveAreaToKV(areaId, restaurants)).catch(() => {});
 }
 
 /**
