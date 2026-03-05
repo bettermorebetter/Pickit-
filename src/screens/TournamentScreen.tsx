@@ -49,10 +49,19 @@ function TournamentCard({
           <div className="tournament-card-rating">
             <span className="star">★</span>
             <span>{r.rating}</span>
-            <span style={{ color: 'var(--color-text-muted)', fontSize: '.75rem' }}>
+            <span style={{ color: 'var(--color-text-muted)', fontSize: '.7rem' }}>
               ({r.reviewCount.toLocaleString()})
             </span>
           </div>
+          <a
+            className="tournament-card-map"
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + (r.address || ''))}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+          >
+            📍 지도 보기
+          </a>
         </div>
       </div>
       <button className="pick-btn" onClick={onPick} disabled={isWinner || isLoser}>
