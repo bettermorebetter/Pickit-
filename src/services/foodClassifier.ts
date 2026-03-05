@@ -11,7 +11,7 @@ let loadPromise: Promise<any> | null = null;
 const FOOD_KEYWORDS = [
   // Meats & proteins
   'meat', 'steak', 'pork', 'beef', 'chicken', 'lamb', 'bacon', 'ham',
-  'meatloaf', 'meat_loaf', 'potpie', 'pot_pie',
+  'meatloaf', 'meat_loaf', 'potpie', 'pot_pie', 'drumstick', 'wing',
   // Seafood
   'fish', 'sushi', 'lobster', 'crab', 'shrimp', 'prawn', 'eel',
   // Noodles & rice & grains
@@ -19,9 +19,10 @@ const FOOD_KEYWORDS = [
   'rice', 'fried_rice', 'risotto',
   // Bread & bakery
   'bread', 'bagel', 'pretzel', 'croissant', 'muffin',
-  'dough', 'baguette', 'french_loaf',
-  // Pizza, burger, hotdog
+  'dough', 'baguette', 'french_loaf', 'waffle', 'pancake',
+  // Pizza, burger, hotdog, sandwich
   'pizza', 'cheeseburger', 'hamburger', 'hotdog', 'hot_dog',
+  'sandwich', 'french_fries', 'fries',
   // Vegetables
   'salad', 'broccoli', 'cauliflower', 'mushroom', 'corn',
   'cucumber', 'bell_pepper', 'zucchini', 'artichoke',
@@ -32,18 +33,24 @@ const FOOD_KEYWORDS = [
   // Desserts & sweets
   'cake', 'ice_cream', 'icecream', 'chocolate', 'trifle',
   'custard', 'pudding', 'pie', 'cookie',
-  // Soups & stews
-  'soup', 'chowder', 'consomme',
+  // Soups & stews & hot pots (Korean jjigae, tang, etc.)
+  'soup', 'chowder', 'consomme', 'hot_pot', 'hotpot',
   // Dumplings & wraps
   'dumpling', 'gyoza', 'wonton', 'burrito', 'taco',
-  // Drinks (some food context)
-  'espresso', 'latte',
+  // Drinks
+  'espresso', 'latte', 'cup', 'coffee_mug', 'beer_glass',
+  'wine_bottle', 'goblet', 'eggnog',
   // Condiments & sauces
-  'guacamole',
-  // Cooking vessels (strong food signal)
-  'frying_pan', 'skillet', 'wok',
-  // Eating vessels
-  'plate', 'bowl',
+  'guacamole', 'chocolate_sauce',
+  // Cooking vessels (strong food signal — Korean stone bowls, pots)
+  'frying_pan', 'skillet', 'wok', 'caldron', 'cauldron',
+  'crock_pot', 'dutch_oven', 'mortar',
+  // Cooking utensils
+  'ladle', 'spatula', 'wooden_spoon', 'cleaver', 'meat_cleaver',
+  // Eating vessels & serving
+  'plate', 'bowl', 'mixing_bowl', 'tray', 'measuring_cup',
+  // Food-adjacent (Korean banchan, shared dishes context)
+  'dining_table', 'dinner_table',
 ];
 
 // Non-food classes that MobileNet might predict for restaurant exteriors/interiors
@@ -129,10 +136,24 @@ export async function reorderByFood(photoUrls: string[]): Promise<{ urls: string
   const food = results.filter(r => r.isFood).sort((a, b) => b.confidence - a.confidence);
   const nonFood = results.filter(r => !r.isFood);
 
-  return {
-    urls: [...food.map(r => r.url), ...nonFood.map(r => r.url)],
-    foodCount: food.length,
-  };
+  if (food.length > 0) {
+    return {
+      urls: [...food.map(r => r.url), ...nonFood.map(r => r.url)],
+      foodCount: food.length,
+    };
+  }
+
+  // Fallback: no food photos detected (classifier failed or all exterior shots).
+  // Google Places typically puts exterior/entrance photo first.
+  // Skip it and promote later photos (more likely to be interior/food).
+  if (photoUrls.length > 1) {
+    return {
+      urls: [...photoUrls.slice(1), photoUrls[0]],
+      foodCount: 0,
+    };
+  }
+
+  return { urls: photoUrls, foodCount: 0 };
 }
 
 /**
