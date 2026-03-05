@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
-import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
+import { CURATED_AREAS, CURATED_DATA_VERSION, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
 import { fetchAllRestaurantData, fetchRestaurantByPlaceId } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
@@ -198,6 +198,61 @@ export default function RestaurantEditorTab() {
     showToast(`✅ ${updated}/${rests.length} 식당 사진 업데이트!`);
   }, [editorAreaId, dispatch, showToast]);
 
+  // Backup: export all curated data as JSON download
+  const handleBackup = useCallback(() => {
+    const allData: Record<string, any> = { _version: CURATED_DATA_VERSION, _date: new Date().toISOString() };
+    let totalRestaurants = 0;
+    for (const areaId of AREA_IDS) {
+      const rests = getCuratedDataRaw(areaId);
+      // Strip photoPool (large, from seed data)
+      allData[areaId] = rests.map(({ photoPool, ...rest }) => rest);
+      totalRestaurants += rests.length;
+    }
+    const json = JSON.stringify(allData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `pickit-backup-${dateStr}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`백업 완료! (${totalRestaurants}개 식당)`);
+  }, [showToast]);
+
+  // Restore: import JSON backup file
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const handleRestore = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result as string);
+        if (!data._version) {
+          showToast('잘못된 백업 파일입니다.');
+          return;
+        }
+        if (!confirm(`${data._date || '날짜 불명'} 백업을 복원하시겠습니까?\n현재 데이터를 덮어씁니다.`)) return;
+        // Write each area to localStorage + KV
+        for (const areaId of AREA_IDS) {
+          if (data[areaId]?.length) {
+            saveCuratedData(areaId, data[areaId]);
+          }
+        }
+        dispatch({ type: 'BUMP_VERSION' });
+        showToast('복원 완료!');
+      } catch {
+        showToast('파일 파싱 실패');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }, [dispatch, showToast]);
+
   const handleClosePanel = useCallback(() => {
     dispatch({ type: 'SET_EDITING', id: null });
   }, [dispatch]);
@@ -287,6 +342,9 @@ export default function RestaurantEditorTab() {
         >
           {bulkProgress ? `📷 ${bulkProgress}` : '📷 전체 사진 업데이트'}
         </button>
+        <button className="admin-btn" onClick={handleBackup}>백업</button>
+        <button className="admin-btn" onClick={handleRestore}>복원</button>
+        <input ref={fileInputRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleFileChange} />
       </div>
 
       {editingRestaurantId && (
