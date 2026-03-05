@@ -20,7 +20,7 @@ const _AREA_GRADIENTS = [
 const _AREA_EMOJIS: Record<string, string> = { korean: '🍚', japanese: '🍣', chinese: '🥟', western: '🍔' };
 const _AREA_CAT_LABEL: Record<string, string> = { korean: '한식', japanese: '일식', chinese: '중식', western: '양식' };
 
-export const CURATED_DATA_VERSION = 10;
+export const CURATED_DATA_VERSION = 11;
 
 export const CURATED_AREAS: Record<string, CuratedArea> = {
   snu: {
@@ -457,68 +457,6 @@ export const CURATED_AREAS: Record<string, CuratedArea> = {
       { id: 'ej_w12', name: '롤링파스타 을지로점',                          category: 'western',   rating: 4.1,  reviewCount: 1400,  address: '서울 중구 을지로 60',                                    lat: 37.5665, lng: 126.9900, photoPool: PHOTO_POOLS.pasta, photoUrls: [], photoUrl: '' },
     ],
   },
-  mullae: {
-    id: 'mullae',
-    label: '문래역',
-    lat: 37.5175,
-    lng: 126.8964,
-    restaurants: [
-      // Korean (13)
-      { id: 'ml_k01', name: '문래곱창 본점',                             category: 'korean',    rating: 4.5,  reviewCount: 2200,  address: '서울 영등포구 문래동3가 55-16',                             lat: 37.5168, lng: 126.8958, photoPool: PHOTO_POOLS.koreanBbq, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k02', name: '팔팔곱창 문래점',                            category: 'korean',    rating: 4.3,  reviewCount: 1800,  address: '서울 영등포구 문래동3가 54-21',                             lat: 37.5170, lng: 126.8962, photoPool: PHOTO_POOLS.koreanBbq, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k03', name: '만수곱창 문래점',                            category: 'korean',    rating: 4.4,  reviewCount: 1500,  address: '서울 영등포구 도림로 434',                                 lat: 37.5172, lng: 126.8966, photoPool: PHOTO_POOLS.koreanBbq, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k04', name: '영등포원조양곱창',                            category: 'korean',    rating: 4.6,  reviewCount: 1200,  address: '서울 영등포구 문래동3가 53-12',                             lat: 37.5166, lng: 126.8955, photoPool: PHOTO_POOLS.koreanBbq, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k05', name: '문래돼지불백',                              category: 'korean',    rating: 4.2,  reviewCount: 870,   address: '서울 영등포구 도림로 440',                                 lat: 37.5174, lng: 126.8970, photoPool: PHOTO_POOLS.koreanBbq, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k06', name: '문래칼국수',                               category: 'korean',    rating: 4.1,  reviewCount: 640,   address: '서울 영등포구 문래동3가 56-8',                              lat: 37.5169, lng: 126.8960, photoPool: PHOTO_POOLS.kalguksu, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k07', name: '부일원 문래점',                             category: 'korean',    rating: 4.3,  reviewCount: 920,   address: '서울 영등포구 도림로 446',                                 lat: 37.5176, lng: 126.8974, photoPool: PHOTO_POOLS.kalguksu, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k08', name: '만석장 문래점',                             category: 'korean',    rating: 4,    reviewCount: 530,   address: '서울 영등포구 문래동3가 52-5',                              lat: 37.5164, lng: 126.8952, photoPool: PHOTO_POOLS.dakhanmari, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k09', name: '할머니순대국 문래점',                          category: 'korean',    rating: 4.2,  reviewCount: 480,   address: '서울 영등포구 경인로 851',                                 lat: 37.5180, lng: 126.8968, photoPool: PHOTO_POOLS.kalguksu, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k10', name: '영등포떡볶이 문래점',                          category: 'korean',    rating: 4.1,  reviewCount: 720,   address: '서울 영등포구 도림로 438',                                 lat: 37.5173, lng: 126.8968, photoPool: PHOTO_POOLS.kalguksu, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k11', name: '문래동부대찌개',                             category: 'korean',    rating: 4,    reviewCount: 420,   address: '서울 영등포구 문래동3가 57-3',                              lat: 37.5171, lng: 126.8963, photoPool: PHOTO_POOLS.dakhanmari, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k12', name: '모래내시장갈비',                             category: 'korean',    rating: 4.4,  reviewCount: 680,   address: '서울 영등포구 도림로 432',                                 lat: 37.5171, lng: 126.8965, photoPool: PHOTO_POOLS.koreanBbq, photoUrls: [], photoUrl: '' },
-      { id: 'ml_k13', name: '소월길 문래점',                             category: 'korean',    rating: 4.3,  reviewCount: 550,   address: '서울 영등포구 문래동3가 55-22',                             lat: 37.5167, lng: 126.8957, photoPool: PHOTO_POOLS.dakhanmari, photoUrls: [], photoUrl: '' },
-      // Japanese (13)
-      { id: 'ml_j01', name: '무쯔 문래점',                              category: 'japanese',  rating: 4.5,  reviewCount: 1100,  address: '서울 영등포구 도림로 442',                                 lat: 37.5175, lng: 126.8972, photoPool: PHOTO_POOLS.ramen, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j02', name: '스시야마 문래점',                            category: 'japanese',  rating: 4.3,  reviewCount: 870,   address: '서울 영등포구 문래동3가 56-14',                             lat: 37.5170, lng: 126.8961, photoPool: PHOTO_POOLS.sushi, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j03', name: '하카타분코 문래점',                           category: 'japanese',  rating: 4.4,  reviewCount: 980,   address: '서울 영등포구 도림로 444',                                 lat: 37.5176, lng: 126.8973, photoPool: PHOTO_POOLS.ramen, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j04', name: '오레노라멘 문래점',                           category: 'japanese',  rating: 4.2,  reviewCount: 620,   address: '서울 영등포구 경인로 855',                                 lat: 37.5181, lng: 126.8970, photoPool: PHOTO_POOLS.ramen, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j05', name: '카츠요 문래점',                             category: 'japanese',  rating: 4.3,  reviewCount: 540,   address: '서울 영등포구 문래동3가 54-8',                              lat: 37.5168, lng: 126.8958, photoPool: PHOTO_POOLS.yakitori, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j06', name: '토리텐 문래점',                             category: 'japanese',  rating: 4.2,  reviewCount: 480,   address: '서울 영등포구 도림로 436',                                 lat: 37.5173, lng: 126.8967, photoPool: PHOTO_POOLS.yakitori, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j07', name: '이자카야하루 문래점',                          category: 'japanese',  rating: 4.4,  reviewCount: 420,   address: '서울 영등포구 문래동3가 55-30',                             lat: 37.5169, lng: 126.8959, photoPool: PHOTO_POOLS.yakitori, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j08', name: '돈카츠히메 문래점',                           category: 'japanese',  rating: 4.3,  reviewCount: 380,   address: '서울 영등포구 도림로 448',                                 lat: 37.5177, lng: 126.8975, photoPool: PHOTO_POOLS.yakitori, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j09', name: '스시로 영등포점',                            category: 'japanese',  rating: 4.1,  reviewCount: 1560,  address: '서울 영등포구 경인로 849',                                 lat: 37.5179, lng: 126.8966, photoPool: PHOTO_POOLS.sushi, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j10', name: '텐동요츠야 문래점',                           category: 'japanese',  rating: 4.2,  reviewCount: 350,   address: '서울 영등포구 문래동3가 53-20',                             lat: 37.5167, lng: 126.8956, photoPool: PHOTO_POOLS.yakitori, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j11', name: '미소야라멘 문래점',                           category: 'japanese',  rating: 4,    reviewCount: 290,   address: '서울 영등포구 도림로 430',                                 lat: 37.5170, lng: 126.8964, photoPool: PHOTO_POOLS.ramen, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j12', name: '하나미스시 문래점',                           category: 'japanese',  rating: 4.5,  reviewCount: 310,   address: '서울 영등포구 문래동3가 56-20',                             lat: 37.5171, lng: 126.8962, photoPool: PHOTO_POOLS.sushi, photoUrls: [], photoUrl: '' },
-      { id: 'ml_j13', name: '규카츠모토무라 문래점',                         category: 'japanese',  rating: 4.4,  reviewCount: 760,   address: '서울 영등포구 경인로 853',                                 lat: 37.5180, lng: 126.8969, photoPool: PHOTO_POOLS.yakitori, photoUrls: [], photoUrl: '' },
-      // Chinese (12)
-      { id: 'ml_c01', name: '탕화쿵푸마라탕 문래점',                         category: 'chinese',   rating: 4.5,  reviewCount: 1200,  address: '서울 영등포구 도림로 435',                                 lat: 37.5172, lng: 126.8966, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c02', name: '홍콩반점 문래점',                            category: 'chinese',   rating: 4,    reviewCount: 1400,  address: '서울 영등포구 경인로 847',                                 lat: 37.5178, lng: 126.8965, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c03', name: '마라다 문래점',                             category: 'chinese',   rating: 4.3,  reviewCount: 640,   address: '서울 영등포구 문래동3가 55-10',                             lat: 37.5168, lng: 126.8957, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c04', name: '동북관 문래점',                             category: 'chinese',   rating: 4.2,  reviewCount: 580,   address: '서울 영등포구 도림로 441',                                 lat: 37.5174, lng: 126.8971, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c05', name: '양꼬치왕 문래점',                            category: 'chinese',   rating: 4.1,  reviewCount: 470,   address: '서울 영등포구 문래동3가 54-15',                             lat: 37.5169, lng: 126.8960, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c06', name: '중경마라탕 문래점',                           category: 'chinese',   rating: 4.2,  reviewCount: 420,   address: '서울 영등포구 도림로 437',                                 lat: 37.5173, lng: 126.8968, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c07', name: '라공방 문래점',                             category: 'chinese',   rating: 4.3,  reviewCount: 380,   address: '서울 영등포구 경인로 851',                                 lat: 37.5180, lng: 126.8968, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c08', name: '짬뽕지존 문래점',                            category: 'chinese',   rating: 4,    reviewCount: 750,   address: '서울 영등포구 문래동3가 56-5',                              lat: 37.5170, lng: 126.8959, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c09', name: '신룽푸마라탕 문래점',                          category: 'chinese',   rating: 4.4,  reviewCount: 530,   address: '서울 영등포구 도림로 443',                                 lat: 37.5175, lng: 126.8972, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c10', name: '용용선생 문래점',                            category: 'chinese',   rating: 4.3,  reviewCount: 620,   address: '서울 영등포구 문래동3가 53-18',                             lat: 37.5166, lng: 126.8955, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c11', name: '차이나타운 문래점',                           category: 'chinese',   rating: 4.1,  reviewCount: 340,   address: '서울 영등포구 도림로 449',                                 lat: 37.5177, lng: 126.8976, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      { id: 'ml_c12', name: '하이디라오 영등포점',                          category: 'chinese',   rating: 4.4,  reviewCount: 2100,  address: '서울 영등포구 경인로 843',                                 lat: 37.5177, lng: 126.8963, photoPool: PHOTO_POOLS.chinese, photoUrls: [], photoUrl: '' },
-      // Western (12)
-      { id: 'ml_w01', name: '문래피자',                                category: 'western',   rating: 4.5,  reviewCount: 980,   address: '서울 영등포구 도림로 433',                                 lat: 37.5171, lng: 126.8965, photoPool: PHOTO_POOLS.pizza, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w02', name: '파스타바 문래점',                            category: 'western',   rating: 4.3,  reviewCount: 740,   address: '서울 영등포구 문래동3가 55-25',                             lat: 37.5168, lng: 126.8958, photoPool: PHOTO_POOLS.pasta, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w03', name: '매드포갈릭 영등포점',                          category: 'western',   rating: 4.1,  reviewCount: 1650,  address: '서울 영등포구 경인로 845',                                 lat: 37.5178, lng: 126.8964, photoPool: PHOTO_POOLS.pasta, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w04', name: '고메버거 문래점',                            category: 'western',   rating: 4.4,  reviewCount: 620,   address: '서울 영등포구 도림로 439',                                 lat: 37.5174, lng: 126.8970, photoPool: PHOTO_POOLS.burger, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w05', name: '맘스터치 문래점',                            category: 'western',   rating: 4,    reviewCount: 1200,  address: '서울 영등포구 문래동3가 54-25',                             lat: 37.5170, lng: 126.8962, photoPool: PHOTO_POOLS.burger, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w06', name: '오스테리아 문래점',                           category: 'western',   rating: 4.6,  reviewCount: 480,   address: '서울 영등포구 도림로 445',                                 lat: 37.5176, lng: 126.8973, photoPool: PHOTO_POOLS.pasta, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w07', name: '스파카나폴리 문래점',                          category: 'western',   rating: 4.4,  reviewCount: 530,   address: '서울 영등포구 문래동3가 56-18',                             lat: 37.5171, lng: 126.8961, photoPool: PHOTO_POOLS.pizza, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w08', name: '버거킹 문래역점',                            category: 'western',   rating: 3.9,  reviewCount: 1800,  address: '서울 영등포구 경인로 857',                                 lat: 37.5182, lng: 126.8971, photoPool: PHOTO_POOLS.burger, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w09', name: '빕스 영등포점',                             category: 'western',   rating: 4.1,  reviewCount: 1400,  address: '서울 영등포구 경인로 841',                                 lat: 37.5176, lng: 126.8962, photoPool: PHOTO_POOLS.pasta, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w10', name: '라쿠치나 문래점',                            category: 'western',   rating: 4.5,  reviewCount: 320,   address: '서울 영등포구 도림로 447',                                 lat: 37.5177, lng: 126.8975, photoPool: PHOTO_POOLS.pasta, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w11', name: '피자알볼로 문래점',                           category: 'western',   rating: 4.2,  reviewCount: 450,   address: '서울 영등포구 문래동3가 53-25',                             lat: 37.5167, lng: 126.8956, photoPool: PHOTO_POOLS.pizza, photoUrls: [], photoUrl: '' },
-      { id: 'ml_w12', name: '프랭크버거 문래점',                           category: 'western',   rating: 4.3,  reviewCount: 580,   address: '서울 영등포구 도림로 431',                                 lat: 37.5170, lng: 126.8964, photoPool: PHOTO_POOLS.burger, photoUrls: [], photoUrl: '' },
-    ],
-  },
   sadang: {
     id: 'sadang',
     label: '사당역',
@@ -777,7 +715,7 @@ export function getCuratedRestaurants(areaId: string): Restaurant[] {
     lng:          r.lng,
     emoji:        _AREA_EMOJIS[r.category] || '🍽️',
     gradient:     _AREA_GRADIENTS[Math.abs(r.id.charCodeAt(r.id.length - 1)) % _AREA_GRADIENTS.length],
-    photoUrl:     r.photoUrl || null,
+    photoUrl:     r.photoUrl || r.photoPool?.[0] || null,
     photoUrls:    r.photoUrls || [],
     bayesianScore: 0,
   }));

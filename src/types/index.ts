@@ -50,7 +50,7 @@ export interface CuratedArea {
   restaurants: CuratedRestaurantSeed[];
 }
 
-export type CuratedAreaId = 'snu' | 'konkuk' | 'hongdae' | 'ewha' | 'seongsu' | 'jamsil' | 'euljiro' | 'mullae' | 'sadang' | 'gangnam' | 'sookmyung';
+export type CuratedAreaId = 'snu' | 'konkuk' | 'hongdae' | 'ewha' | 'seongsu' | 'jamsil' | 'euljiro' | 'sadang' | 'gangnam' | 'sookmyung';
 
 export type LocationMode = CuratedAreaId | null;
 export type ScreenName = 'location' | 'map' | 'tournament' | 'result' | 'admin';
