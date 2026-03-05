@@ -2,10 +2,10 @@
    Restaurant Editor Tab — curated restaurant CRUD
 ══════════════════════════════════════════════════════════════ */
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { fetchRestaurantByPlaceId } from '../../services/adminPhotos.ts';
+import { fetchAllRestaurantData, fetchRestaurantByPlaceId } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
@@ -108,6 +108,53 @@ export default function RestaurantEditorTab() {
     dispatch({ type: 'BUMP_VERSION' });
     dispatch({ type: 'SET_EDITING', id: newId });
     showToast(`✅ "${data.name}" 추가 완료!`);
+  }, [editorAreaId, dispatch, showToast]);
+
+  // Auto-fetch photos for restaurants missing images (once per area)
+  const fetchedAreas = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (fetchedAreas.current.has(editorAreaId)) return;
+    fetchedAreas.current.add(editorAreaId);
+
+    const rests = getCuratedDataRaw(editorAreaId);
+    const needsPhotos = rests.filter(r => !r.photoUrl && (!r.photoUrls || !r.photoUrls.length));
+    if (!needsPhotos.length) return;
+
+    (async () => {
+      const { reorderByFood } = await import('../../services/foodClassifier.ts');
+
+      showToast(`📷 ${needsPhotos.length}개 식당 이미지 로딩 중...`);
+      let filled = 0;
+
+      for (let i = 0; i < needsPhotos.length; i += 3) {
+        const batch = needsPhotos.slice(i, i + 3);
+        const results = await Promise.all(
+          batch.map(r => fetchAllRestaurantData(r.name, r.lat, r.lng))
+        );
+        // Re-read fresh data each batch to avoid overwriting deletions
+        const fresh = getCuratedDataRaw(editorAreaId);
+        for (let j = 0; j < batch.length; j++) {
+          const data = results[j];
+          if (!data || !data.photoUrls.length) continue;
+          const target = fresh.find(r => r.id === batch[j].id);
+          if (!target) continue; // deleted during fetch → skip
+
+          const { urls } = await reorderByFood(data.photoUrls);
+          target.photoUrls = urls.slice(0, 5);
+          target.photoUrl = urls[0] || '';
+          target.rating = data.rating;
+          target.reviewCount = data.reviewCount;
+          filled++;
+        }
+        saveCuratedData(editorAreaId, fresh);
+        dispatch({ type: 'BUMP_VERSION' });
+
+        if (i + 3 < needsPhotos.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+      if (filled > 0) showToast(`✅ ${filled}개 식당 이미지 자동 설정!`);
+    })();
   }, [editorAreaId, dispatch, showToast]);
 
   const handleClosePanel = useCallback(() => {
