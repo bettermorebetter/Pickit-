@@ -41,11 +41,10 @@ function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span>({r.reviewCount.toLocaleString()})</span>
-            {formatPrice(r.priceMin, r.priceMax) && (
-              <span className="price-tag">💰 {formatPrice(r.priceMin, r.priceMax)}</span>
-            )}
           </div>
-          {r.address && <div className="preview-card-address">📍 {r.address}</div>}
+          {formatPrice(r.priceMin, r.priceMax) && (
+            <div className="preview-card-price">💰 {formatPrice(r.priceMin, r.priceMax)}</div>
+          )}
           {r.walkMinutes != null && areaLabel && (
             <div className="preview-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
           )}

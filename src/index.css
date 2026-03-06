@@ -313,6 +313,8 @@
   }
   .star { color: #f59e0b; }
   .price-tag { color: #16a34a; font-weight: 700; }
+  .preview-card-price { font-size: .65rem; color: #16a34a; font-weight: 600; margin-top: 2px; }
+  .tournament-card-price { font-size: .7rem; color: #16a34a; font-weight: 600; margin-top: 2px; }
 
   /* ── Progress bar ────────────────────────────────────────── */
   .progress-bar-wrap {

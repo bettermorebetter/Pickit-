@@ -55,21 +55,17 @@ function TournamentCard({
           )}
         </div>
         <div className="tournament-card-body">
+          <div className="tournament-card-name">{r.name}</div>
           <div className="tournament-card-info-row">
-            <span className="tournament-card-name">{r.name}</span>
-            <span className="tournament-card-sep">·</span>
             <span className="tournament-card-category">{r.category}</span>
             <span className="tournament-card-sep">·</span>
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span className="tournament-card-reviews">({r.reviewCount.toLocaleString()})</span>
-            {formatPrice(r.priceMin, r.priceMax) && (
-              <>
-                <span className="tournament-card-sep">·</span>
-                <span className="price-tag">💰 {formatPrice(r.priceMin, r.priceMax)}</span>
-              </>
-            )}
           </div>
+          {formatPrice(r.priceMin, r.priceMax) && (
+            <div className="tournament-card-price">💰 {formatPrice(r.priceMin, r.priceMax)}</div>
+          )}
           {r.walkMinutes != null && areaLabel && (
             <div className="tournament-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
           )}
@@ -117,11 +113,10 @@ function SummaryCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span>({r.reviewCount.toLocaleString()})</span>
-            {formatPrice(r.priceMin, r.priceMax) && (
-              <span className="price-tag">💰 {formatPrice(r.priceMin, r.priceMax)}</span>
-            )}
           </div>
-          {r.address && <div className="preview-card-address">📍 {r.address}</div>}
+          {formatPrice(r.priceMin, r.priceMax) && (
+            <div className="preview-card-price">💰 {formatPrice(r.priceMin, r.priceMax)}</div>
+          )}
           {r.walkMinutes != null && areaLabel && (
             <div className="preview-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
           )}
