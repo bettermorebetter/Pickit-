@@ -612,6 +612,7 @@
   }
 
   .location-hero { text-align: center; padding: var(--sp-6) 0 var(--sp-5); }
+  .location-icon { -webkit-text-fill-color: initial; }
   .location-title {
     font-size: 2.25rem; font-weight: 900;
     background: linear-gradient(135deg, var(--color-primary), var(--color-accent));

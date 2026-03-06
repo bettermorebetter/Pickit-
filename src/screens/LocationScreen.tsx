@@ -54,7 +54,7 @@ export default function LocationScreen() {
       <InstallBanner />
       <div className="location-wrapper">
         <div className="location-hero">
-          <h1 className="location-title" onClick={handleIconTap}>🍽️ Pickit!</h1>
+          <h1 className="location-title" onClick={handleIconTap}><span className="location-icon">🍽️</span> Pickit!</h1>
         </div>
 
         <div className="location-form">
