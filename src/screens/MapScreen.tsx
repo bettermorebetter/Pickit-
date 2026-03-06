@@ -1,11 +1,9 @@
 /* ══════════════════════════════════════════════════════════════
-   Map Screen — shows map with markers and restaurant preview cards
+   Map Screen — shows restaurant preview cards
 ══════════════════════════════════════════════════════════════ */
 
-import { useEffect, useRef } from 'react';
 import { useApp } from '../context/AppContext.tsx';
 import { CURATED_AREAS } from '../data/restaurants.ts';
-import { makeEmojiMarkerIcon } from '../services/places.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
@@ -56,57 +54,10 @@ function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
 
 export default function MapScreen() {
   const { state, dispatch } = useApp();
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<google.maps.Map | null>(null);
-  const markersRef = useRef<google.maps.Marker[]>([]);
 
   const mode = state.locationMode;
   const area = mode ? CURATED_AREAS[mode] : null;
-  const lat = area?.lat ?? 37.5665;
-  const lng = area?.lng ?? 126.9780;
   const title = area ? `${area.label} 맛집` : '주변 맛집';
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    // Clear old markers
-    markersRef.current.forEach(m => m.setMap(null));
-    markersRef.current = [];
-
-    try {
-      if (typeof google === 'undefined' || !google.maps) throw new Error('no maps');
-
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.setCenter({ lat, lng });
-        mapInstanceRef.current.setZoom(16);
-      } else {
-        mapInstanceRef.current = new google.maps.Map(mapRef.current, {
-          center: { lat, lng },
-          zoom: 16,
-          mapTypeId: google.maps.MapTypeId.ROADMAP,
-          gestureHandling: 'cooperative',
-        });
-      }
-
-      state.restaurants.forEach(r => {
-        const marker = new google.maps.Marker({
-          position: { lat: r.lat, lng: r.lng },
-          map: mapInstanceRef.current!,
-          icon: makeEmojiMarkerIcon(r.emoji),
-          title: r.name,
-        });
-        markersRef.current.push(marker);
-      });
-    } catch (_e) {
-      if (mapRef.current) {
-        mapRef.current.innerHTML = `
-          <div class="map-error">
-            <span class="map-error-icon">🗺️</span>
-            <p class="map-error-text">지도를 불러올 수 없습니다.<br>Google Maps API 키를 확인하세요.</p>
-          </div>`;
-      }
-    }
-  }, [lat, lng, state.restaurants]);
 
   return (
     <div className="screen">
@@ -117,8 +68,6 @@ export default function MapScreen() {
           </button>
           <h2 className="screen-title">{title}</h2>
         </div>
-
-        <div ref={mapRef} className="map-container" />
 
         <div className="restaurant-list-header">
           <div className="restaurant-list-title">후보 맛집 {state.restaurants.length}곳</div>
