@@ -157,87 +157,39 @@ export default function RestaurantEditorTab() {
     })();
   }, [editorAreaId, dispatch, showToast]);
 
-  // Walk time calculation via Distance Matrix API
-  const [walkProgress, setWalkProgress] = useState('');
-  const handleCalcWalkTimes = useCallback(async () => {
+  // Walk time calculation (straight-line distance × 1.3 correction, 80m/min)
+  const handleCalcWalkTimes = useCallback(() => {
     const area = CURATED_AREAS[editorAreaId];
     if (!area) return;
-    if (typeof google === 'undefined' || !google.maps) {
-      showToast('Google Maps API가 로드되지 않았습니다.');
-      return;
-    }
 
     const rests = getCuratedDataRaw(editorAreaId);
     if (!rests.length) return;
 
-    const origin = new google.maps.LatLng(area.lat, area.lng);
-    const service = new google.maps.DistanceMatrixService();
-    const BATCH = 25;
-    setWalkProgress(`0/${rests.length}`);
+    // Haversine distance in meters
+    const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+      const R = 6371000;
+      const toRad = (d: number) => d * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLng = toRad(lng2 - lng1);
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    };
 
-    const walkResults: Record<string, number> = {};
-
-    for (let i = 0; i < rests.length; i += BATCH) {
-      const batch = rests.slice(i, i + BATCH);
-      const destinations = batch.map(r => new google.maps.LatLng(r.lat, r.lng));
-
-      try {
-        const response: any = await (service as any).getDistanceMatrix({
-          origins: [origin],
-          destinations,
-          travelMode: google.maps.TravelMode.WALKING,
-        });
-        console.log('DistanceMatrix response:', response);
-
-        const rows = response.rows || response?.rows;
-        if (!rows?.length) {
-          console.warn('No rows in response:', response);
-          continue;
-        }
-
-        const elements = rows[0].elements;
-        for (let j = 0; j < batch.length; j++) {
-          const el = elements[j];
-          const elStatus = el.status?.toString?.() || el.status;
-          if (elStatus === 'OK') {
-            const durVal = el.duration?.value ?? el.duration;
-            const minutes = Math.round((typeof durVal === 'number' ? durVal : durVal?.value ?? 0) / 60);
-            if (minutes > 0) walkResults[batch[j].id] = minutes;
-          } else {
-            console.warn(`Element ${batch[j].id} status: ${elStatus}`);
-          }
-        }
-      } catch (e) {
-        console.error('Distance Matrix batch error:', e);
-        showToast(`오류: ${(e as Error).message}`);
-      }
-
-      setWalkProgress(`${Math.min(i + BATCH, rests.length)}/${rests.length}`);
-      if (i + BATCH < rests.length) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
+    for (const r of rests) {
+      const dist = haversine(area.lat, area.lng, r.lat, r.lng);
+      const walkDist = dist * 1.3; // road detour correction
+      r.walkMinutes = Math.max(1, Math.round(walkDist / 80)); // 80m/min walking speed
     }
 
-    // Save to localStorage
-    const fresh = getCuratedDataRaw(editorAreaId);
-    for (const r of fresh) {
-      if (walkResults[r.id] != null) {
-        r.walkMinutes = walkResults[r.id];
-      }
-    }
-    saveCuratedData(editorAreaId, fresh);
+    saveCuratedData(editorAreaId, rests);
     dispatch({ type: 'BUMP_VERSION' });
-    setWalkProgress('');
 
-    // Log hardcoded values for embedding in source
     console.log(`=== ${area.label} walkMinutes ===`);
-    for (const r of fresh) {
-      if (r.walkMinutes != null) {
-        console.log(`  ${r.id}: ${r.walkMinutes}분 (${r.name})`);
-      }
+    for (const r of rests) {
+      console.log(`  ${r.id}: ${r.walkMinutes}분 (${r.name})`);
     }
 
-    showToast(`🚶 ${Object.keys(walkResults).length}개 식당 도보 시간 계산 완료!`);
+    showToast(`🚶 ${rests.length}개 식당 도보 시간 계산 완료!`);
   }, [editorAreaId, dispatch, showToast]);
 
   // Bulk photo update: fetch & classify photos for ALL restaurants in current area
@@ -419,12 +371,8 @@ export default function RestaurantEditorTab() {
 
       <div className="editor-toolbar">
         <button className="admin-btn admin-btn--primary" onClick={handleAdd}>+ 식당 추가</button>
-        <button
-          className="admin-btn"
-          onClick={handleCalcWalkTimes}
-          disabled={!!walkProgress}
-        >
-          {walkProgress ? `🚶 ${walkProgress}` : '🚶 도보 시간 계산'}
+        <button className="admin-btn" onClick={handleCalcWalkTimes}>
+          🚶 도보 시간 계산
         </button>
         <button
           className="admin-btn"
