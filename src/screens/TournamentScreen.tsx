@@ -47,14 +47,14 @@ function TournamentCard({
           )}
         </div>
         <div className="tournament-card-body">
-          <div className="tournament-card-name">{r.name}</div>
-          <div className="tournament-card-category">{r.category}</div>
-          <div className="tournament-card-rating">
+          <div className="tournament-card-info-row">
+            <span className="tournament-card-name">{r.name}</span>
+            <span className="tournament-card-sep">·</span>
+            <span className="tournament-card-category">{r.category}</span>
+            <span className="tournament-card-sep">·</span>
             <span className="star">★</span>
             <span>{r.rating}</span>
-            <span style={{ color: 'var(--color-text-muted)', fontSize: '.7rem' }}>
-              ({r.reviewCount.toLocaleString()})
-            </span>
+            <span className="tournament-card-reviews">({r.reviewCount.toLocaleString()})</span>
           </div>
           {r.walkMinutes != null && areaLabel && (
             <div className="tournament-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
@@ -222,8 +222,6 @@ export default function TournamentScreen() {
           />
         </div>
         <div className="progress-label">{roundLabel} · 매치 {currentMatch + 1}/{totalMatches}</div>
-
-        <div className="tournament-prompt">어떤 식당이 더 좋으세요?</div>
 
         <div key={animKey} className="tournament-vs-stack cards--entering">
           <TournamentCard
