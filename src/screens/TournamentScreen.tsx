@@ -77,6 +77,45 @@ function TournamentCard({
   );
 }
 
+function RoundSummary({
+  roundLabel,
+  nextRoundLabel,
+  winners,
+  onNext,
+}: {
+  roundLabel: string;
+  nextRoundLabel: string;
+  winners: Restaurant[];
+  onNext: () => void;
+}) {
+  return (
+    <div className="round-summary cards--entering">
+      <div className="round-summary-title">{roundLabel} 완료!</div>
+      <div className="round-summary-sub">다음 라운드에 진출한 식당들</div>
+      <div className="round-summary-list">
+        {winners.map(r => (
+          <div key={r.id} className="round-summary-item">
+            <div className="round-summary-thumb" style={{ background: r.gradient }}>
+              {r.photoUrl ? (
+                <img src={r.photoUrl} alt={r.name} />
+              ) : (
+                <span>{r.emoji}</span>
+              )}
+            </div>
+            <div className="round-summary-info">
+              <div className="round-summary-name">{r.name}</div>
+              <div className="round-summary-meta">{r.category} · ★{r.rating}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn--primary btn--full" onClick={onNext}>
+        {nextRoundLabel} 시작! →
+      </button>
+    </div>
+  );
+}
+
 export default function TournamentScreen() {
   const { state, dispatch } = useApp();
   const { bracket } = state;
@@ -84,16 +123,26 @@ export default function TournamentScreen() {
   const [clickingId, setClickingId] = useState<string | null>(null);
   const [animKey, setAnimKey] = useState(0);
   const pendingRef = useRef(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const prevRoundRef = useRef(bracket.currentRound);
 
   const mode = state.locationMode;
   const area = mode ? CURATED_AREAS[mode] : null;
 
-  const { currentRound, currentMatch, rounds } = bracket;
-  if (!rounds.length || !rounds[currentRound]?.[currentMatch]) return null;
+  const { currentRound, currentMatch, rounds, winners } = bracket;
 
-  const [a, b] = rounds[currentRound][currentMatch];
-  const roundLabel = ROUND_LABELS[currentRound];
-  const totalMatches = TOTAL_MATCHES[currentRound];
+  // Detect round change → show summary
+  useEffect(() => {
+    if (currentRound > prevRoundRef.current) {
+      setShowSummary(true);
+    }
+    prevRoundRef.current = currentRound;
+  }, [currentRound]);
+
+  if (!rounds.length || (!showSummary && !rounds[currentRound]?.[currentMatch])) return null;
+
+  const roundLabel = ROUND_LABELS[currentRound] ?? '';
+  const totalMatches = TOTAL_MATCHES[currentRound] ?? 1;
 
   // Total matches done so far
   let totalDone = 0;
@@ -104,7 +153,6 @@ export default function TournamentScreen() {
     if (pendingRef.current) return;
     pendingRef.current = true;
 
-    // Brief click feedback
     setClickingId(winner.id);
 
     setTimeout(() => {
@@ -120,11 +168,37 @@ export default function TournamentScreen() {
     }, 160);
   }, [dispatch]);
 
-  // Reset animation on match change
   useEffect(() => {
     setWinnerId(null);
     setClickingId(null);
   }, [currentRound, currentMatch]);
+
+  // Round summary screen
+  if (showSummary && currentRound > 0) {
+    const prevWinners = winners[currentRound - 1] || [];
+    const prevLabel = ROUND_LABELS[currentRound - 1] ?? '';
+    return (
+      <div className="screen">
+        <div className="tournament-wrapper">
+          <div className="screen-header">
+            <button className="btn-back" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'map' })}>
+              ← 뒤로
+            </button>
+            <h2 className="screen-title">푸드 월드컵</h2>
+            <span className="round-badge">{prevLabel} 결과</span>
+          </div>
+          <RoundSummary
+            roundLabel={prevLabel}
+            nextRoundLabel={roundLabel}
+            winners={prevWinners}
+            onNext={() => setShowSummary(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  const [a, b] = rounds[currentRound][currentMatch];
 
   return (
     <div className="screen">
@@ -151,7 +225,7 @@ export default function TournamentScreen() {
 
         <div className="tournament-prompt">어떤 식당이 더 좋으세요?</div>
 
-        <div key={animKey} className="tournament-vs-grid cards--entering">
+        <div key={animKey} className="tournament-vs-stack cards--entering">
           <TournamentCard
             r={a}
             onPick={() => handlePick(a, b.id)}
