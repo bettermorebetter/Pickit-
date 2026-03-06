@@ -628,7 +628,6 @@
     padding: var(--sp-6); box-shadow: var(--shadow-md); border: 1.5px solid var(--color-border);
   }
 
-  .tournament-wrapper .tournament-vs-stack .gmaps-btn { display: none; }
   .tournament-vs-stack { gap: var(--sp-2); }
 
   /* ── Round summary ─────────────────────────────────────────── */
