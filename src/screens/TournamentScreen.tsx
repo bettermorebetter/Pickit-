@@ -77,36 +77,71 @@ function TournamentCard({
   );
 }
 
+function SummaryCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
+  const mapsHref = r.placeId
+    ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.address ? ' ' + r.address : ' 서울'))}`;
+
+  return (
+    <div className="preview-card" role="listitem">
+      <div
+        className={`preview-card-photo${r.photoUrls?.length > 1 ? ' preview-card-photo--multi' : ''}`}
+        style={{ background: r.gradient }}
+      >
+        {r.photoUrl ? (
+          <PhotoCarousel photos={r.photoUrls?.length ? r.photoUrls : [r.photoUrl]} alt={r.name} />
+        ) : (
+          <span className="card-fallback-emoji">{r.emoji}</span>
+        )}
+        <span className={`category-badge category-badge--${r.foodCategory}`}>{r.category}</span>
+      </div>
+      <div className="preview-card-bottom">
+        <div className="preview-card-info">
+          <div className="preview-card-name">{r.name}</div>
+          <div className="preview-card-meta">
+            <span>{r.category}</span>
+            <span className="star">★</span>
+            <span>{r.rating}</span>
+            <span>({r.reviewCount.toLocaleString()})</span>
+          </div>
+          {r.address && <div className="preview-card-address">📍 {r.address}</div>}
+          {r.walkMinutes != null && areaLabel && (
+            <div className="preview-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
+          )}
+        </div>
+      </div>
+      <a
+        className="gmaps-btn"
+        href={mapsHref}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        📍 구글맵에서 보기
+      </a>
+    </div>
+  );
+}
+
 function RoundSummary({
   roundLabel,
   nextRoundLabel,
   winners,
+  areaLabel,
   onNext,
 }: {
   roundLabel: string;
   nextRoundLabel: string;
   winners: Restaurant[];
+  areaLabel?: string;
   onNext: () => void;
 }) {
   return (
     <div className="round-summary cards--entering">
       <div className="round-summary-title">{roundLabel} 완료!</div>
       <div className="round-summary-sub">다음 라운드에 진출한 식당들</div>
-      <div className="round-summary-list">
+      <div className="restaurant-preview-list" role="list">
         {winners.map(r => (
-          <div key={r.id} className="round-summary-item">
-            <div className="round-summary-thumb" style={{ background: r.gradient }}>
-              {r.photoUrl ? (
-                <img src={r.photoUrl} alt={r.name} />
-              ) : (
-                <span>{r.emoji}</span>
-              )}
-            </div>
-            <div className="round-summary-info">
-              <div className="round-summary-name">{r.name}</div>
-              <div className="round-summary-meta">{r.category} · ★{r.rating}</div>
-            </div>
-          </div>
+          <SummaryCard key={r.id} r={r} areaLabel={areaLabel} />
         ))}
       </div>
       <button className="btn btn--primary btn--full" onClick={onNext}>
@@ -143,11 +178,6 @@ export default function TournamentScreen() {
 
   const roundLabel = ROUND_LABELS[currentRound] ?? '';
   const totalMatches = TOTAL_MATCHES[currentRound] ?? 1;
-
-  // Total matches done so far
-  let totalDone = 0;
-  for (let r = 0; r < currentRound; r++) totalDone += TOTAL_MATCHES[r];
-  totalDone += currentMatch;
 
   const handlePick = useCallback((winner: Restaurant, loserId: string) => {
     if (pendingRef.current) return;
@@ -191,6 +221,7 @@ export default function TournamentScreen() {
             roundLabel={prevLabel}
             nextRoundLabel={roundLabel}
             winners={prevWinners}
+            areaLabel={area?.label}
             onNext={() => setShowSummary(false)}
           />
         </div>
@@ -199,6 +230,9 @@ export default function TournamentScreen() {
   }
 
   const [a, b] = rounds[currentRound][currentMatch];
+
+  // Per-round progress: currentMatch / totalMatches
+  const roundProgress = (currentMatch / totalMatches) * 100;
 
   return (
     <div className="screen">
@@ -214,11 +248,11 @@ export default function TournamentScreen() {
         <div className="progress-bar-wrap">
           <div
             className="progress-bar"
-            style={{ width: `${(totalDone / 7) * 100}%` }}
+            style={{ width: `${roundProgress}%` }}
             role="progressbar"
-            aria-valuenow={totalDone}
+            aria-valuenow={currentMatch}
             aria-valuemin={0}
-            aria-valuemax={7}
+            aria-valuemax={totalMatches}
           />
         </div>
         <div className="progress-label">{roundLabel} · 매치 {currentMatch + 1}/{totalMatches}</div>
