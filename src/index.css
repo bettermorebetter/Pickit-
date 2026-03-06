@@ -96,8 +96,8 @@
   .screen-header {
     display: flex;
     align-items: center;
-    gap: var(--sp-3);
-    margin-bottom: var(--sp-5);
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-2);
   }
 }
 
@@ -166,9 +166,9 @@
   /* ── Back button ─────────────────────────────────────────── */
   .btn-back {
     color: var(--color-text-muted);
-    font-size: .875rem;
+    font-size: .75rem;
     font-weight: 500;
-    padding: var(--sp-2) var(--sp-3);
+    padding: var(--sp-1) var(--sp-2);
     border-radius: var(--radius-sm);
     transition: color var(--transition), background var(--transition);
     flex-shrink: 0;
@@ -180,16 +180,16 @@
     margin-left: auto;
     background: var(--color-accent);
     color: #fff;
-    font-size: .875rem;
+    font-size: .75rem;
     font-weight: 700;
-    padding: var(--sp-1) var(--sp-3);
+    padding: 2px var(--sp-2);
     border-radius: var(--radius-full);
     letter-spacing: .02em;
   }
 
   /* ── Screen title ────────────────────────────────────────── */
   .screen-title {
-    font-size: 1.125rem;
+    font-size: .9rem;
     font-weight: 700;
     flex: 1;
     white-space: nowrap;
