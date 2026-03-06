@@ -9,7 +9,13 @@ import { ROUND_LABELS, TOTAL_MATCHES } from '../types/index.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
-const PRICE_WON = ['', '₩', '₩₩', '₩₩₩', '₩₩₩₩'];
+function formatPrice(min?: number, max?: number): string | null {
+  if (min == null && max == null) return null;
+  const lo = min ?? max!;
+  const hi = max ?? min!;
+  if (lo === hi) return `${lo.toLocaleString()}원`;
+  return `${lo.toLocaleString()}~${hi.toLocaleString()}원`;
+}
 
 function TournamentCard({
   r,
@@ -57,10 +63,10 @@ function TournamentCard({
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span className="tournament-card-reviews">({r.reviewCount.toLocaleString()})</span>
-            {r.priceLevel != null && r.priceLevel > 0 && (
+            {formatPrice(r.priceMin, r.priceMax) && (
               <>
                 <span className="tournament-card-sep">·</span>
-                <span className="price-tag">{PRICE_WON[r.priceLevel]}</span>
+                <span className="price-tag">💰 {formatPrice(r.priceMin, r.priceMax)}</span>
               </>
             )}
           </div>
@@ -111,8 +117,8 @@ function SummaryCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span>({r.reviewCount.toLocaleString()})</span>
-            {r.priceLevel != null && r.priceLevel > 0 && (
-              <span className="price-tag">{PRICE_WON[r.priceLevel]}</span>
+            {formatPrice(r.priceMin, r.priceMax) && (
+              <span className="price-tag">💰 {formatPrice(r.priceMin, r.priceMax)}</span>
             )}
           </div>
           {r.address && <div className="preview-card-address">📍 {r.address}</div>}

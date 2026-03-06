@@ -26,7 +26,8 @@ export interface Restaurant {
   photoUrl: string | null;
   photoUrls: string[];
   walkMinutes?: number;
-  priceLevel?: number;
+  priceMin?: number;
+  priceMax?: number;
   bayesianScore?: number;
 }
 
@@ -43,7 +44,8 @@ export interface CuratedRestaurantSeed {
   photoUrls: string[];
   photoUrl: string;
   walkMinutes?: number;
-  priceLevel?: number;
+  priceMin?: number;
+  priceMax?: number;
 }
 
 export interface CuratedArea {

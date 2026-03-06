@@ -8,7 +8,13 @@ import { CURATED_AREAS } from '../data/restaurants.ts';
 import { makeEmojiMarkerIcon } from '../services/places.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
-const PRICE_WON = ['', '₩', '₩₩', '₩₩₩', '₩₩₩₩'];
+function formatPrice(min?: number, max?: number): string | null {
+  if (min == null && max == null) return null;
+  const lo = min ?? max!;
+  const hi = max ?? min!;
+  if (lo === hi) return `${lo.toLocaleString()}원`;
+  return `${lo.toLocaleString()}~${hi.toLocaleString()}원`;
+}
 
 export default function ResultScreen() {
   const { state, dispatch } = useApp();
@@ -119,8 +125,8 @@ export default function ResultScreen() {
               <span style={{ color: 'var(--color-text-muted)', fontSize: '.8125rem' }}>
                 ({c.reviewCount.toLocaleString()} 리뷰)
               </span>
-              {c.priceLevel != null && c.priceLevel > 0 && (
-                <span className="price-tag">{PRICE_WON[c.priceLevel]}</span>
+              {formatPrice(c.priceMin, c.priceMax) && (
+                <span className="price-tag">💰 {formatPrice(c.priceMin, c.priceMax)}</span>
               )}
             </div>
             {c.walkMinutes != null && area && (

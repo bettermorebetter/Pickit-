@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, CURATED_DATA_VERSION, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { fetchAllRestaurantData, fetchRestaurantByPlaceId, fetchPriceLevel } from '../../services/adminPhotos.ts';
+import { fetchAllRestaurantData, fetchRestaurantByPlaceId, fetchPriceRange } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
@@ -204,7 +204,7 @@ export default function RestaurantEditorTab() {
     for (let i = 0; i < rests.length; i += 3) {
       const batch = rests.slice(i, i + 3);
       const results = await Promise.all(
-        batch.map(r => fetchPriceLevel(r.name, r.lat, r.lng))
+        batch.map(r => fetchPriceRange(r.name, r.lat, r.lng))
       );
 
       const fresh = getCuratedDataRaw(editorAreaId);
@@ -212,7 +212,8 @@ export default function RestaurantEditorTab() {
         if (results[j] != null) {
           const target = fresh.find(r => r.id === batch[j].id);
           if (target) {
-            target.priceLevel = results[j]!;
+            target.priceMin = results[j]!.min;
+            target.priceMax = results[j]!.max;
             fetched++;
           }
         }

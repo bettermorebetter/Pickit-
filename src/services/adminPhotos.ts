@@ -344,27 +344,40 @@ export async function fetchRestaurantByPlaceId(placeId: string): Promise<PlaceId
   return null;
 }
 
-/* ── Price level fetch ─────────────────────────────────────── */
+/* ── Price range fetch ─────────────────────────────────────── */
 
-const PRICE_LEVEL_MAP: Record<string, number> = {
-  FREE: 0, INEXPENSIVE: 1, MODERATE: 2, EXPENSIVE: 3, VERY_EXPENSIVE: 4,
+export interface PriceRange {
+  min: number;
+  max: number;
+}
+
+// Old API price_level → estimated Korean price range (won)
+const PRICE_LEVEL_TO_RANGE: Record<number, PriceRange> = {
+  1: { min: 5000, max: 10000 },
+  2: { min: 10000, max: 20000 },
+  3: { min: 20000, max: 40000 },
+  4: { min: 40000, max: 80000 },
 };
 
-async function fetchPriceLevelNew(name: string, lat: number, lng: number): Promise<number | null> {
+async function fetchPriceRangeNew(name: string, lat: number, lng: number): Promise<PriceRange | null> {
   const Place = (google.maps.places as any).Place;
   const found = await findPlaceId(name, lat, lng);
   if (!found?.id) return null;
 
   const place = new Place({ id: found.id });
-  await place.fetchFields({ fields: ['priceLevel'] });
+  await place.fetchFields({ fields: ['priceRange'] });
 
-  const pl = place.priceLevel;
-  if (pl == null) return null;
-  if (typeof pl === 'number') return pl;
-  return PRICE_LEVEL_MAP[pl] ?? null;
+  const pr = place.priceRange;
+  if (!pr) return null;
+
+  const min = Number(pr.startPrice?.units) || 0;
+  const max = Number(pr.endPrice?.units) || 0;
+  if (min === 0 && max === 0) return null;
+
+  return { min, max: max || min };
 }
 
-function fetchPriceLevelOld(name: string, lat: number, lng: number): Promise<number | null> {
+function fetchPriceRangeOld(name: string, lat: number, lng: number): Promise<PriceRange | null> {
   return new Promise(resolve => {
     const svc = new google.maps.places.PlacesService(document.createElement('div'));
     const timer = setTimeout(() => resolve(null), 8000);
@@ -385,7 +398,9 @@ function fetchPriceLevelOld(name: string, lat: number, lng: number): Promise<num
               resolve(null);
               return;
             }
-            resolve((place as any).price_level ?? null);
+            const level = (place as any).price_level;
+            if (level == null || level === 0) { resolve(null); return; }
+            resolve(PRICE_LEVEL_TO_RANGE[level] ?? null);
           }
         );
       }
@@ -393,15 +408,15 @@ function fetchPriceLevelOld(name: string, lat: number, lng: number): Promise<num
   });
 }
 
-export async function fetchPriceLevel(name: string, lat: number, lng: number): Promise<number | null> {
+export async function fetchPriceRange(name: string, lat: number, lng: number): Promise<PriceRange | null> {
   try {
     if (hasNewPlacesApi()) {
-      try { return await fetchPriceLevelNew(name, lat, lng); }
+      try { return await fetchPriceRangeNew(name, lat, lng); }
       catch (_e) { /* fall through */ }
     }
-    if (hasOldPlacesApi()) return await fetchPriceLevelOld(name, lat, lng);
+    if (hasOldPlacesApi()) return await fetchPriceRangeOld(name, lat, lng);
   } catch (e) {
-    console.warn('Price level fetch failed:', e);
+    console.warn('Price range fetch failed:', e);
   }
   return null;
 }

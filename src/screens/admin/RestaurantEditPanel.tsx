@@ -24,6 +24,8 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
   const [reviewCount, setReviewCount] = useState('');
   const [lat, setLat] = useState('');
   const [lng, setLng] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
 
   useEffect(() => {
     const restaurants = getCuratedDataRaw(areaId);
@@ -36,6 +38,8 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
     setReviewCount(r.reviewCount != null ? String(r.reviewCount) : '');
     setLat(r.lat != null ? String(r.lat) : '');
     setLng(r.lng != null ? String(r.lng) : '');
+    setPriceMin(r.priceMin != null ? String(r.priceMin) : '');
+    setPriceMax(r.priceMax != null ? String(r.priceMax) : '');
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     // Auto-fetch data for restaurants missing photos (first visit)
@@ -78,11 +82,13 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
     target.reviewCount = parseInt(reviewCount) || 0;
     target.lat = parseFloat(lat) || 0;
     target.lng = parseFloat(lng) || 0;
+    target.priceMin = priceMin ? parseInt(priceMin) : undefined;
+    target.priceMax = priceMax ? parseInt(priceMax) : undefined;
 
     saveCuratedData(areaId, rests);
     onSaved();
     onClose();
-  }, [areaId, restaurantId, name, category, address, rating, reviewCount, lat, lng, onSaved, onClose]);
+  }, [areaId, restaurantId, name, category, address, rating, reviewCount, lat, lng, priceMin, priceMax, onSaved, onClose]);
 
   const mapsLink = lat && lng && name
     ? `https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lng},17z`
@@ -147,6 +153,28 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
               value={reviewCount}
               onChange={e => setReviewCount(e.target.value)}
               min="0" placeholder="500"
+            />
+          </div>
+        </div>
+        <div className="editor-field-row">
+          <div className="editor-field">
+            <label className="editor-label">1인당 최소 (원)</label>
+            <input
+              type="number"
+              className="editor-input"
+              value={priceMin}
+              onChange={e => setPriceMin(e.target.value)}
+              min="0" step="1000" placeholder="10000"
+            />
+          </div>
+          <div className="editor-field">
+            <label className="editor-label">1인당 최대 (원)</label>
+            <input
+              type="number"
+              className="editor-input"
+              value={priceMax}
+              onChange={e => setPriceMax(e.target.value)}
+              min="0" step="1000" placeholder="25000"
             />
           </div>
         </div>
