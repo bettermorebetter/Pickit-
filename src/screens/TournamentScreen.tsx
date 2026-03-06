@@ -4,6 +4,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useApp } from '../context/AppContext.tsx';
+import { CURATED_AREAS } from '../data/restaurants.ts';
 import { ROUND_LABELS, TOTAL_MATCHES } from '../types/index.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
@@ -14,12 +15,14 @@ function TournamentCard({
   isWinner,
   isLoser,
   isClicking,
+  areaLabel,
 }: {
   r: Restaurant;
   onPick: () => void;
   isWinner: boolean;
   isLoser: boolean;
   isClicking: boolean;
+  areaLabel?: string;
 }) {
   const cardClass = [
     'tournament-card',
@@ -53,14 +56,17 @@ function TournamentCard({
               ({r.reviewCount.toLocaleString()})
             </span>
           </div>
+          {r.walkMinutes != null && areaLabel && (
+            <div className="tournament-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
+          )}
           <a
-            className="tournament-card-map"
+            className="gmaps-btn"
             href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + (r.address || ''))}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
           >
-            📍 지도 보기
+            📍 구글맵에서 보기
           </a>
         </div>
       </div>
@@ -78,6 +84,9 @@ export default function TournamentScreen() {
   const [clickingId, setClickingId] = useState<string | null>(null);
   const [animKey, setAnimKey] = useState(0);
   const pendingRef = useRef(false);
+
+  const mode = state.locationMode;
+  const area = mode ? CURATED_AREAS[mode] : null;
 
   const { currentRound, currentMatch, rounds } = bracket;
   if (!rounds.length || !rounds[currentRound]?.[currentMatch]) return null;
@@ -149,6 +158,7 @@ export default function TournamentScreen() {
             isWinner={winnerId === a.id}
             isLoser={winnerId === b.id}
             isClicking={clickingId === a.id}
+            areaLabel={area?.label}
           />
 
           <div className="vs-divider">VS</div>
@@ -159,6 +169,7 @@ export default function TournamentScreen() {
             isWinner={winnerId === b.id}
             isLoser={winnerId === a.id}
             isClicking={clickingId === b.id}
+            areaLabel={area?.label}
           />
         </div>
       </div>

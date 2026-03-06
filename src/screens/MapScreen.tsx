@@ -9,7 +9,7 @@ import { makeEmojiMarkerIcon } from '../services/places.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
-function PreviewCard({ r }: { r: Restaurant }) {
+function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
   const mapsHref = r.placeId
     ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.address ? ' ' + r.address : ' 서울'))}`;
@@ -37,17 +37,19 @@ function PreviewCard({ r }: { r: Restaurant }) {
             <span>({r.reviewCount.toLocaleString()})</span>
           </div>
           {r.address && <div className="preview-card-address">📍 {r.address}</div>}
+          {r.walkMinutes != null && areaLabel && (
+            <div className="preview-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
+          )}
         </div>
-        <a
-          className="preview-card-maps-btn"
-          href={mapsHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`${r.name} 구글맵`}
-        >
-          🗺️
-        </a>
       </div>
+      <a
+        className="gmaps-btn"
+        href={mapsHref}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        📍 구글맵에서 보기
+      </a>
     </div>
   );
 }
@@ -125,7 +127,7 @@ export default function MapScreen() {
 
         <div className="restaurant-preview-list" role="list">
           {state.restaurants.map(r => (
-            <PreviewCard key={r.id} r={r} />
+            <PreviewCard key={r.id} r={r} areaLabel={area?.label} />
           ))}
         </div>
 

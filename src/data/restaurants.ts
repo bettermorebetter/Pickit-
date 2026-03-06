@@ -717,6 +717,7 @@ export function getCuratedRestaurants(areaId: string): Restaurant[] {
     gradient:     _AREA_GRADIENTS[Math.abs(r.id.charCodeAt(r.id.length - 1)) % _AREA_GRADIENTS.length],
     photoUrl:     r.photoUrl || r.photoPool?.[0] || null,
     photoUrls:    r.photoUrls || [],
+    walkMinutes:  r.walkMinutes,
     bayesianScore: 0,
   }));
 }

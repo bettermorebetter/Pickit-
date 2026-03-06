@@ -25,6 +25,7 @@ export interface Restaurant {
   gradient: string;
   photoUrl: string | null;
   photoUrls: string[];
+  walkMinutes?: number;
   bayesianScore?: number;
 }
 
@@ -40,6 +41,7 @@ export interface CuratedRestaurantSeed {
   photoPool: string[];
   photoUrls: string[];
   photoUrl: string;
+  walkMinutes?: number;
 }
 
 export interface CuratedArea {

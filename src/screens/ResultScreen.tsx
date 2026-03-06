@@ -4,6 +4,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useApp } from '../context/AppContext.tsx';
+import { CURATED_AREAS } from '../data/restaurants.ts';
 import { makeEmojiMarkerIcon } from '../services/places.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
@@ -78,6 +79,9 @@ export default function ResultScreen() {
     dispatch({ type: 'RESET' });
   }, [dispatch]);
 
+  const mode = state.locationMode;
+  const area = mode ? CURATED_AREAS[mode] : null;
+
   if (!c) return null;
 
   const championMapsUrl = c.placeId
@@ -114,15 +118,18 @@ export default function ResultScreen() {
                 ({c.reviewCount.toLocaleString()} 리뷰)
               </span>
             </div>
-            <a
-              className="champion-card-link"
-              href={championMapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              구글맵에서 보기 →
-            </a>
+            {c.walkMinutes != null && area && (
+              <div className="champion-card-walk">🚶 {area.label}에서 도보 {c.walkMinutes}분</div>
+            )}
           </div>
+          <a
+            className="gmaps-btn"
+            href={championMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            📍 구글맵에서 보기
+          </a>
         </div>
 
         <div ref={mapRef} className="map-container map-container--result" />

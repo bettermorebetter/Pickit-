@@ -157,6 +157,84 @@ export default function RestaurantEditorTab() {
     })();
   }, [editorAreaId, dispatch, showToast]);
 
+  // Walk time calculation via Distance Matrix API
+  const [walkProgress, setWalkProgress] = useState('');
+  const handleCalcWalkTimes = useCallback(async () => {
+    const area = CURATED_AREAS[editorAreaId];
+    if (!area) return;
+    if (typeof google === 'undefined' || !google.maps) {
+      showToast('Google Maps API가 로드되지 않았습니다.');
+      return;
+    }
+
+    const rests = getCuratedDataRaw(editorAreaId);
+    if (!rests.length) return;
+
+    const origin = new google.maps.LatLng(area.lat, area.lng);
+    const service = new google.maps.DistanceMatrixService();
+    const BATCH = 25;
+    setWalkProgress(`0/${rests.length}`);
+
+    const walkResults: Record<string, number> = {};
+
+    for (let i = 0; i < rests.length; i += BATCH) {
+      const batch = rests.slice(i, i + BATCH);
+      const destinations = batch.map(r => new google.maps.LatLng(r.lat, r.lng));
+
+      try {
+        const response = await new Promise<google.maps.DistanceMatrixResponse>((resolve, reject) => {
+          service.getDistanceMatrix(
+            {
+              origins: [origin],
+              destinations,
+              travelMode: google.maps.TravelMode.WALKING,
+            },
+            (result, status) => {
+              if (status === google.maps.DistanceMatrixStatus.OK && result) resolve(result);
+              else reject(new Error(`DistanceMatrix error: ${status}`));
+            }
+          );
+        });
+
+        const elements = response.rows[0].elements;
+        for (let j = 0; j < batch.length; j++) {
+          if (elements[j].status === 'OK') {
+            const minutes = Math.round(elements[j].duration.value / 60);
+            walkResults[batch[j].id] = minutes;
+          }
+        }
+      } catch (e) {
+        console.warn('Distance Matrix batch error:', e);
+      }
+
+      setWalkProgress(`${Math.min(i + BATCH, rests.length)}/${rests.length}`);
+      if (i + BATCH < rests.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
+
+    // Save to localStorage
+    const fresh = getCuratedDataRaw(editorAreaId);
+    for (const r of fresh) {
+      if (walkResults[r.id] != null) {
+        r.walkMinutes = walkResults[r.id];
+      }
+    }
+    saveCuratedData(editorAreaId, fresh);
+    dispatch({ type: 'BUMP_VERSION' });
+    setWalkProgress('');
+
+    // Log hardcoded values for embedding in source
+    console.log(`=== ${area.label} walkMinutes ===`);
+    for (const r of fresh) {
+      if (r.walkMinutes != null) {
+        console.log(`  ${r.id}: ${r.walkMinutes}분 (${r.name})`);
+      }
+    }
+
+    showToast(`🚶 ${Object.keys(walkResults).length}개 식당 도보 시간 계산 완료!`);
+  }, [editorAreaId, dispatch, showToast]);
+
   // Bulk photo update: fetch & classify photos for ALL restaurants in current area
   const [bulkProgress, setBulkProgress] = useState('');
   const handleBulkPhotoUpdate = useCallback(async () => {
@@ -336,6 +414,13 @@ export default function RestaurantEditorTab() {
 
       <div className="editor-toolbar">
         <button className="admin-btn admin-btn--primary" onClick={handleAdd}>+ 식당 추가</button>
+        <button
+          className="admin-btn"
+          onClick={handleCalcWalkTimes}
+          disabled={!!walkProgress}
+        >
+          {walkProgress ? `🚶 ${walkProgress}` : '🚶 도보 시간 계산'}
+        </button>
         <button
           className="admin-btn"
           onClick={handleBulkPhotoUpdate}
