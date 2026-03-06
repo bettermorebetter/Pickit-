@@ -17,7 +17,24 @@ export default defineConfig({
         background_color: '#1a1a2e',
         display: 'standalone',
         orientation: 'portrait',
+        id: '/',
         start_url: '/',
+        screenshots: [
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'narrow',
+            label: '서울 푸드 월드컵',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: '서울 푸드 월드컵',
+          },
+        ],
         icons: [
           {
             src: 'pwa-192x192.png',

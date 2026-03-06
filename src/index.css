@@ -567,6 +567,28 @@
    SCREENS
 ══════════════════════════════════════════════════════════════ */
 @layer screens {
+  /* Install banner */
+  .install-banner {
+    display: flex; align-items: center; gap: var(--sp-3);
+    background: linear-gradient(135deg, #ff6b35, #f7931e);
+    color: white; padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--radius-md); margin: var(--sp-3) var(--sp-4) 0;
+    font-size: .8125rem; line-height: 1.4;
+  }
+  .install-text { flex: 1; }
+  .install-text b { font-weight: 700; }
+  .install-btn {
+    flex-shrink: 0; padding: var(--sp-2) var(--sp-4);
+    background: white; color: #ff6b35; border: none;
+    border-radius: var(--radius-full); font-weight: 700;
+    font-size: .8125rem; cursor: pointer;
+  }
+  .install-dismiss {
+    flex-shrink: 0; background: none; border: none;
+    color: rgba(255,255,255,.7); font-size: 1.25rem;
+    cursor: pointer; padding: 0 var(--sp-1); line-height: 1;
+  }
+
   .location-hero { text-align: center; padding: var(--sp-10) 0 var(--sp-8); }
   .location-icon { font-size: 4rem; margin-bottom: var(--sp-4); filter: drop-shadow(0 4px 8px rgba(0,0,0,.15)); }
   .location-title {

@@ -7,6 +7,7 @@ import { useApp } from '../context/AppContext.tsx';
 import { shuffle } from '../data/constants.ts';
 import { CURATED_AREAS, getCuratedRestaurants } from '../data/restaurants.ts';
 import type { CuratedAreaId } from '../types/index.ts';
+import InstallBanner from '../components/InstallBanner.tsx';
 
 const AREA_CONFIGS: { id: CuratedAreaId; emoji: string; label: string; desc: string }[] = [
   { id: 'snu',        emoji: '🎓', label: '서울대입구역', desc: '샤로수길 맛집' },
@@ -50,6 +51,7 @@ export default function LocationScreen() {
 
   return (
     <div className="screen">
+      <InstallBanner />
       <div className="location-wrapper">
         <div className="location-hero">
           <div className="location-icon" onClick={handleIconTap}>🍽️</div>
