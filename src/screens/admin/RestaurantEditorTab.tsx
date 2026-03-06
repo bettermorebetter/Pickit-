@@ -182,29 +182,29 @@ export default function RestaurantEditorTab() {
       const destinations = batch.map(r => new google.maps.LatLng(r.lat, r.lng));
 
       try {
-        const response = await new Promise<google.maps.DistanceMatrixResponse>((resolve, reject) => {
-          service.getDistanceMatrix(
-            {
-              origins: [origin],
-              destinations,
-              travelMode: google.maps.TravelMode.WALKING,
-            },
-            (result, status) => {
-              console.log('DistanceMatrix response:', status, result);
-              if (status === 'OK' && result) resolve(result);
-              else reject(new Error(`DistanceMatrix error: ${status}`));
-            }
-          );
+        const response: any = await (service as any).getDistanceMatrix({
+          origins: [origin],
+          destinations,
+          travelMode: google.maps.TravelMode.WALKING,
         });
+        console.log('DistanceMatrix response:', response);
 
-        const elements = response.rows[0].elements;
+        const rows = response.rows || response?.rows;
+        if (!rows?.length) {
+          console.warn('No rows in response:', response);
+          continue;
+        }
+
+        const elements = rows[0].elements;
         for (let j = 0; j < batch.length; j++) {
           const el = elements[j];
-          if (el.status === 'OK' || (el as any).status === google.maps.DistanceMatrixElementStatus.OK) {
-            const minutes = Math.round(el.duration.value / 60);
-            walkResults[batch[j].id] = minutes;
+          const elStatus = el.status?.toString?.() || el.status;
+          if (elStatus === 'OK') {
+            const durVal = el.duration?.value ?? el.duration;
+            const minutes = Math.round((typeof durVal === 'number' ? durVal : durVal?.value ?? 0) / 60);
+            if (minutes > 0) walkResults[batch[j].id] = minutes;
           } else {
-            console.warn(`Element ${batch[j].id} status: ${el.status}`);
+            console.warn(`Element ${batch[j].id} status: ${elStatus}`);
           }
         }
       } catch (e) {
