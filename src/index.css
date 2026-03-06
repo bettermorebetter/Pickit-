@@ -611,15 +611,13 @@
     cursor: pointer; padding: 0 var(--sp-1); line-height: 1;
   }
 
-  .location-hero { text-align: center; padding: var(--sp-10) 0 var(--sp-8); }
-  .location-icon { font-size: 4rem; margin-bottom: var(--sp-4); filter: drop-shadow(0 4px 8px rgba(0,0,0,.15)); }
+  .location-hero { text-align: center; padding: var(--sp-6) 0 var(--sp-5); }
   .location-title {
-    font-size: 2rem; font-weight: 900;
+    font-size: 2.25rem; font-weight: 900;
     background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    background-clip: text; margin-bottom: var(--sp-2);
+    background-clip: text; cursor: pointer;
   }
-  .location-subtitle { font-size: .9375rem; color: var(--color-text-muted); }
   .location-form {
     background: var(--color-surface); border-radius: var(--radius-xl);
     padding: var(--sp-6); box-shadow: var(--shadow-md); border: 1.5px solid var(--color-border);

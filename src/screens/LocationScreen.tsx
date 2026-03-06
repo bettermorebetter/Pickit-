@@ -54,9 +54,7 @@ export default function LocationScreen() {
       <InstallBanner />
       <div className="location-wrapper">
         <div className="location-hero">
-          <div className="location-icon" onClick={handleIconTap}>🍽️</div>
-          <h1 className="location-title">서울 푸드 월드컵</h1>
-          <p className="location-subtitle">지역을 선택하면 맛집 8곳 토너먼트!</p>
+          <h1 className="location-title" onClick={handleIconTap}>🍽️ Pickit!</h1>
         </div>
 
         <div className="location-form">
