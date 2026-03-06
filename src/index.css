@@ -86,11 +86,15 @@
 
   .location-wrapper,
   .map-screen-wrapper,
-  .tournament-wrapper,
   .result-wrapper {
     max-width: 480px;
     margin: 0 auto;
     padding: var(--sp-6) var(--sp-4) var(--sp-10);
+  }
+  .tournament-wrapper {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: var(--sp-3) var(--sp-4) 20px;
   }
 
   .screen-header {
@@ -329,7 +333,7 @@
   }
   .progress-label {
     font-size: .8125rem; color: var(--color-text-muted); font-weight: 500;
-    margin-bottom: var(--sp-5); text-align: center;
+    margin-bottom: var(--sp-2); text-align: center;
   }
 
   /* ── Tournament cards ────────────────────────────────────── */
@@ -624,9 +628,8 @@
     padding: var(--sp-6); box-shadow: var(--shadow-md); border: 1.5px solid var(--color-border);
   }
 
-  .tournament-wrapper {
-    padding-bottom: var(--sp-8);
-  }
+  .tournament-wrapper .tournament-vs-stack .gmaps-btn { display: none; }
+  .tournament-vs-stack { gap: var(--sp-2); }
 
   /* ── Round summary ─────────────────────────────────────────── */
   .round-summary { margin-top: var(--sp-4); }
