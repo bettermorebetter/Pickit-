@@ -9,6 +9,8 @@ import { ROUND_LABELS, TOTAL_MATCHES } from '../types/index.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
+const PRICE_WON = ['', '₩', '₩₩', '₩₩₩', '₩₩₩₩'];
+
 function TournamentCard({
   r,
   onPick,
@@ -55,6 +57,12 @@ function TournamentCard({
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span className="tournament-card-reviews">({r.reviewCount.toLocaleString()})</span>
+            {r.priceLevel != null && r.priceLevel > 0 && (
+              <>
+                <span className="tournament-card-sep">·</span>
+                <span className="price-tag">{PRICE_WON[r.priceLevel]}</span>
+              </>
+            )}
           </div>
           {r.walkMinutes != null && areaLabel && (
             <div className="tournament-card-walk">🚶 {areaLabel}에서 도보 {r.walkMinutes}분</div>
@@ -103,6 +111,9 @@ function SummaryCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span>({r.reviewCount.toLocaleString()})</span>
+            {r.priceLevel != null && r.priceLevel > 0 && (
+              <span className="price-tag">{PRICE_WON[r.priceLevel]}</span>
+            )}
           </div>
           {r.address && <div className="preview-card-address">📍 {r.address}</div>}
           {r.walkMinutes != null && areaLabel && (

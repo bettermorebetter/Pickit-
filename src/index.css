@@ -312,6 +312,7 @@
     display: flex; align-items: center; gap: 2px;
   }
   .star { color: #f59e0b; }
+  .price-tag { color: #16a34a; font-weight: 700; }
 
   /* ── Progress bar ────────────────────────────────────────── */
   .progress-bar-wrap {

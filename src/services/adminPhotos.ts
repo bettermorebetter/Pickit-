@@ -344,6 +344,68 @@ export async function fetchRestaurantByPlaceId(placeId: string): Promise<PlaceId
   return null;
 }
 
+/* ── Price level fetch ─────────────────────────────────────── */
+
+const PRICE_LEVEL_MAP: Record<string, number> = {
+  FREE: 0, INEXPENSIVE: 1, MODERATE: 2, EXPENSIVE: 3, VERY_EXPENSIVE: 4,
+};
+
+async function fetchPriceLevelNew(name: string, lat: number, lng: number): Promise<number | null> {
+  const Place = (google.maps.places as any).Place;
+  const found = await findPlaceId(name, lat, lng);
+  if (!found?.id) return null;
+
+  const place = new Place({ id: found.id });
+  await place.fetchFields({ fields: ['priceLevel'] });
+
+  const pl = place.priceLevel;
+  if (pl == null) return null;
+  if (typeof pl === 'number') return pl;
+  return PRICE_LEVEL_MAP[pl] ?? null;
+}
+
+function fetchPriceLevelOld(name: string, lat: number, lng: number): Promise<number | null> {
+  return new Promise(resolve => {
+    const svc = new google.maps.places.PlacesService(document.createElement('div'));
+    const timer = setTimeout(() => resolve(null), 8000);
+
+    svc.findPlaceFromQuery(
+      { query: name, fields: ['place_id'] } as any,
+      (results, status) => {
+        if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.[0]) {
+          clearTimeout(timer);
+          resolve(null);
+          return;
+        }
+        svc.getDetails(
+          { placeId: results[0].place_id!, fields: ['price_level'] },
+          (place, detailStatus) => {
+            clearTimeout(timer);
+            if (detailStatus !== google.maps.places.PlacesServiceStatus.OK || !place) {
+              resolve(null);
+              return;
+            }
+            resolve((place as any).price_level ?? null);
+          }
+        );
+      }
+    );
+  });
+}
+
+export async function fetchPriceLevel(name: string, lat: number, lng: number): Promise<number | null> {
+  try {
+    if (hasNewPlacesApi()) {
+      try { return await fetchPriceLevelNew(name, lat, lng); }
+      catch (_e) { /* fall through */ }
+    }
+    if (hasOldPlacesApi()) return await fetchPriceLevelOld(name, lat, lng);
+  } catch (e) {
+    console.warn('Price level fetch failed:', e);
+  }
+  return null;
+}
+
 /* ── Public API ────────────────────────────────────────────── */
 
 /**

@@ -7,6 +7,9 @@ import { CURATED_AREAS } from '../data/restaurants.ts';
 import type { Restaurant } from '../types/index.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
+const PRICE_LABELS = ['무료', '저렴', '보통', '비쌈', '매우 비쌈'];
+const PRICE_WON = ['', '₩', '₩₩', '₩₩₩', '₩₩₩₩'];
+
 function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
   const mapsHref = r.placeId
     ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}`
@@ -33,6 +36,9 @@ function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
             <span className="star">★</span>
             <span>{r.rating}</span>
             <span>({r.reviewCount.toLocaleString()})</span>
+            {r.priceLevel != null && r.priceLevel > 0 && (
+              <span className="price-tag">{PRICE_WON[r.priceLevel]}</span>
+            )}
           </div>
           {r.address && <div className="preview-card-address">📍 {r.address}</div>}
           {r.walkMinutes != null && areaLabel && (

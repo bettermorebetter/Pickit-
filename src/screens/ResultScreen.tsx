@@ -8,6 +8,8 @@ import { CURATED_AREAS } from '../data/restaurants.ts';
 import { makeEmojiMarkerIcon } from '../services/places.ts';
 import PhotoCarousel from '../components/PhotoCarousel.tsx';
 
+const PRICE_WON = ['', '₩', '₩₩', '₩₩₩', '₩₩₩₩'];
+
 export default function ResultScreen() {
   const { state, dispatch } = useApp();
   const c = state.champion;
@@ -117,6 +119,9 @@ export default function ResultScreen() {
               <span style={{ color: 'var(--color-text-muted)', fontSize: '.8125rem' }}>
                 ({c.reviewCount.toLocaleString()} 리뷰)
               </span>
+              {c.priceLevel != null && c.priceLevel > 0 && (
+                <span className="price-tag">{PRICE_WON[c.priceLevel]}</span>
+              )}
             </div>
             {c.walkMinutes != null && area && (
               <div className="champion-card-walk">🚶 {area.label}에서 도보 {c.walkMinutes}분</div>

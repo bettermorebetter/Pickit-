@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, CURATED_DATA_VERSION, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { fetchAllRestaurantData, fetchRestaurantByPlaceId } from '../../services/adminPhotos.ts';
+import { fetchAllRestaurantData, fetchRestaurantByPlaceId, fetchPriceLevel } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
@@ -192,6 +192,44 @@ export default function RestaurantEditorTab() {
     showToast(`🚶 ${rests.length}개 식당 도보 시간 계산 완료!`);
   }, [editorAreaId, dispatch, showToast]);
 
+  // Price level fetch
+  const [priceProgress, setPriceProgress] = useState('');
+  const handleFetchPrices = useCallback(async () => {
+    const rests = getCuratedDataRaw(editorAreaId);
+    if (!rests.length) return;
+
+    setPriceProgress(`0/${rests.length}`);
+    let fetched = 0;
+
+    for (let i = 0; i < rests.length; i += 3) {
+      const batch = rests.slice(i, i + 3);
+      const results = await Promise.all(
+        batch.map(r => fetchPriceLevel(r.name, r.lat, r.lng))
+      );
+
+      const fresh = getCuratedDataRaw(editorAreaId);
+      for (let j = 0; j < batch.length; j++) {
+        if (results[j] != null) {
+          const target = fresh.find(r => r.id === batch[j].id);
+          if (target) {
+            target.priceLevel = results[j]!;
+            fetched++;
+          }
+        }
+      }
+      saveCuratedData(editorAreaId, fresh);
+      dispatch({ type: 'BUMP_VERSION' });
+      setPriceProgress(`${Math.min(i + 3, rests.length)}/${rests.length}`);
+
+      if (i + 3 < rests.length) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    setPriceProgress('');
+    showToast(`💰 ${fetched}/${rests.length} 식당 가격 정보 업데이트!`);
+  }, [editorAreaId, dispatch, showToast]);
+
   // Bulk photo update: fetch & classify photos for ALL restaurants in current area
   const [bulkProgress, setBulkProgress] = useState('');
   const handleBulkPhotoUpdate = useCallback(async () => {
@@ -373,6 +411,13 @@ export default function RestaurantEditorTab() {
         <button className="admin-btn admin-btn--primary" onClick={handleAdd}>+ 식당 추가</button>
         <button className="admin-btn" onClick={handleCalcWalkTimes}>
           🚶 도보 시간 계산
+        </button>
+        <button
+          className="admin-btn"
+          onClick={handleFetchPrices}
+          disabled={!!priceProgress}
+        >
+          {priceProgress ? `💰 ${priceProgress}` : '💰 가격 정보'}
         </button>
         <button
           className="admin-btn"
