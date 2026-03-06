@@ -78,11 +78,11 @@ export default function MapScreen() {
 
       if (mapInstanceRef.current) {
         mapInstanceRef.current.setCenter({ lat, lng });
-        mapInstanceRef.current.setZoom(14);
+        mapInstanceRef.current.setZoom(16);
       } else {
         mapInstanceRef.current = new google.maps.Map(mapRef.current, {
           center: { lat, lng },
-          zoom: 14,
+          zoom: 16,
           mapTypeId: google.maps.MapTypeId.ROADMAP,
           gestureHandling: 'cooperative',
         });
