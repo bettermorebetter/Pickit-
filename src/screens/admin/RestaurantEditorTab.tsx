@@ -190,7 +190,8 @@ export default function RestaurantEditorTab() {
               travelMode: google.maps.TravelMode.WALKING,
             },
             (result, status) => {
-              if (status === google.maps.DistanceMatrixStatus.OK && result) resolve(result);
+              console.log('DistanceMatrix response:', status, result);
+              if (status === 'OK' && result) resolve(result);
               else reject(new Error(`DistanceMatrix error: ${status}`));
             }
           );
@@ -198,13 +199,17 @@ export default function RestaurantEditorTab() {
 
         const elements = response.rows[0].elements;
         for (let j = 0; j < batch.length; j++) {
-          if (elements[j].status === 'OK') {
-            const minutes = Math.round(elements[j].duration.value / 60);
+          const el = elements[j];
+          if (el.status === 'OK' || (el as any).status === google.maps.DistanceMatrixElementStatus.OK) {
+            const minutes = Math.round(el.duration.value / 60);
             walkResults[batch[j].id] = minutes;
+          } else {
+            console.warn(`Element ${batch[j].id} status: ${el.status}`);
           }
         }
       } catch (e) {
-        console.warn('Distance Matrix batch error:', e);
+        console.error('Distance Matrix batch error:', e);
+        showToast(`오류: ${(e as Error).message}`);
       }
 
       setWalkProgress(`${Math.min(i + BATCH, rests.length)}/${rests.length}`);
