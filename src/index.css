@@ -375,11 +375,13 @@
   /* ── Google Maps button (shared) ─────────────────────────── */
   .gmaps-btn {
     display: flex; align-items: center; justify-content: center; gap: 4px;
-    width: 100%; padding: 8px 0; border-radius: 0 0 var(--radius-md) var(--radius-md);
-    background: #2563eb; color: #fff; font-size: .75rem; font-weight: 700;
-    text-decoration: none; transition: background .15s;
+    margin: var(--sp-2); padding: 7px 0;
+    border-radius: var(--radius-full);
+    background: #e0f2fe; color: #0284c7; font-size: .7rem; font-weight: 700;
+    text-decoration: none; transition: background .15s, color .15s;
+    border: 1.5px solid #bae6fd;
   }
-  .gmaps-btn:hover { background: #1d4ed8; }
+  .gmaps-btn:hover { background: #bae6fd; color: #0369a1; }
 
   /* ── Walk time labels ──────────────────────────────────────── */
   .preview-card-walk,
@@ -433,7 +435,7 @@
   }
 
   .champion-card .gmaps-btn {
-    border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+    margin: var(--sp-3) var(--sp-4) var(--sp-4);
     padding: 12px 0; font-size: .875rem;
   }
 
