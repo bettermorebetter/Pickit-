@@ -2,7 +2,7 @@
    Image Section — main/sub image slots + photo pool grid
 ══════════════════════════════════════════════════════════════ */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { fetchPhotosForRestaurant, fetchMorePhotos } from '../../services/adminPhotos.ts';
@@ -139,6 +139,65 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
     bump();
   }, [areaId, restaurantId, addUrl, bump, showToast]);
 
+  // Paste handler: add image URL or clipboard image to the pool
+  const poolRef = useRef<HTMLDivElement>(null);
+
+  const addToPool = useCallback((url: string) => {
+    const cached = state.photoCache[restaurantId] || [];
+    if (cached.includes(url)) {
+      showToast('이미 풀에 있는 이미지입니다.');
+      return;
+    }
+    dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: [...cached, url] });
+    const fullPool = state.fullPhotoPool[restaurantId] || [];
+    if (!fullPool.includes(url)) {
+      dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: [...fullPool, url] });
+    }
+    showToast('이미지가 풀에 추가되었습니다!');
+  }, [restaurantId, state.photoCache, state.fullPhotoPool, dispatch, showToast]);
+
+  useEffect(() => {
+    const el = poolRef.current;
+    if (!el) return;
+
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (const item of items) {
+        // Case 1: Pasted text that looks like an image URL
+        if (item.type === 'text/plain') {
+          item.getAsString(text => {
+            const trimmed = text.trim();
+            if (/^https?:\/\/.+/i.test(trimmed)) {
+              addToPool(trimmed);
+            }
+          });
+          e.preventDefault();
+          return;
+        }
+
+        // Case 2: Pasted image blob (screenshot, copied image)
+        if (item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (!blob) continue;
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result === 'string') {
+              addToPool(reader.result);
+            }
+          };
+          reader.readAsDataURL(blob);
+          e.preventDefault();
+          return;
+        }
+      }
+    };
+
+    el.addEventListener('paste', handlePaste);
+    return () => el.removeEventListener('paste', handlePaste);
+  }, [addToPool]);
+
   const handleRefresh = useCallback(async () => {
     const r = getCuratedDataRaw(areaId).find(x => x.id === restaurantId);
     if (!r) return;
@@ -216,10 +275,10 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
       </div>
 
       {/* Pool grid */}
-      <div className="ei-pool-section">
+      <div className="ei-pool-section" ref={poolRef} tabIndex={-1}>
         <div className="ei-pool-header">
           <span className="ei-section-label">이미지 풀 (구글 포토)</span>
-          <span className="ei-pool-hint">클릭으로 선택/해제 · 메인 1장 + 서브 4장</span>
+          <span className="ei-pool-hint">클릭으로 선택/해제 · Ctrl+V로 이미지 추가</span>
         </div>
         <div className="ei-pool-grid">
           {pool.length === 0 ? (
