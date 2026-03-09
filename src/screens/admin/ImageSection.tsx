@@ -139,64 +139,67 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
     bump();
   }, [areaId, restaurantId, addUrl, bump, showToast]);
 
-  // Paste handler: add image URL or clipboard image to the pool
-  const poolRef = useRef<HTMLDivElement>(null);
-
-  const addToPool = useCallback((url: string) => {
-    const cached = state.photoCache[restaurantId] || [];
-    if (cached.includes(url)) {
-      showToast('이미 풀에 있는 이미지입니다.');
-      return;
-    }
-    dispatch({ type: 'SET_PHOTO_CACHE', restaurantId, photos: [...cached, url] });
-    const fullPool = state.fullPhotoPool[restaurantId] || [];
-    if (!fullPool.includes(url)) {
-      dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId, photos: [...fullPool, url] });
-    }
-    showToast('이미지가 풀에 추가되었습니다!');
-  }, [restaurantId, state.photoCache, state.fullPhotoPool, dispatch, showToast]);
+  // Paste handler: Ctrl+V anywhere in page adds image to pool
+  // (uses ref to read latest state without re-attaching listener)
+  const stateRef = useRef({ photoCache: state.photoCache, fullPhotoPool: state.fullPhotoPool, restaurantId });
+  stateRef.current = { photoCache: state.photoCache, fullPhotoPool: state.fullPhotoPool, restaurantId };
 
   useEffect(() => {
-    const el = poolRef.current;
-    if (!el) return;
-
     const handlePaste = (e: ClipboardEvent) => {
+      // Don't intercept paste in input/textarea fields
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
       const items = e.clipboardData?.items;
       if (!items) return;
 
-      for (const item of items) {
-        // Case 1: Pasted text that looks like an image URL
-        if (item.type === 'text/plain') {
-          item.getAsString(text => {
-            const trimmed = text.trim();
-            if (/^https?:\/\/.+/i.test(trimmed)) {
-              addToPool(trimmed);
-            }
-          });
-          e.preventDefault();
+      const { photoCache, fullPhotoPool, restaurantId: rid } = stateRef.current;
+
+      const addToPool = (url: string) => {
+        const cached = photoCache[rid] || [];
+        if (cached.includes(url)) {
+          showToast('이미 풀에 있는 이미지입니다.');
           return;
         }
+        dispatch({ type: 'SET_PHOTO_CACHE', restaurantId: rid, photos: [...cached, url] });
+        const full = fullPhotoPool[rid] || [];
+        if (!full.includes(url)) {
+          dispatch({ type: 'SET_FULL_PHOTO_POOL', restaurantId: rid, photos: [...full, url] });
+        }
+        showToast('이미지가 풀에 추가되었습니다!');
+      };
 
-        // Case 2: Pasted image blob (screenshot, copied image)
+      // Check for image blob first (screenshot, copied image)
+      for (const item of items) {
         if (item.type.startsWith('image/')) {
           const blob = item.getAsFile();
           if (!blob) continue;
           const reader = new FileReader();
           reader.onload = () => {
-            if (typeof reader.result === 'string') {
-              addToPool(reader.result);
-            }
+            if (typeof reader.result === 'string') addToPool(reader.result);
           };
           reader.readAsDataURL(blob);
           e.preventDefault();
           return;
         }
       }
+
+      // Check for text URL
+      for (const item of items) {
+        if (item.type === 'text/plain') {
+          item.getAsString(text => {
+            const trimmed = text.trim();
+            if (/^https?:\/\/.+/i.test(trimmed)) addToPool(trimmed);
+          });
+          e.preventDefault();
+          return;
+        }
+      }
     };
 
-    el.addEventListener('paste', handlePaste);
-    return () => el.removeEventListener('paste', handlePaste);
-  }, [addToPool]);
+    document.addEventListener('paste', handlePaste);
+    return () => document.removeEventListener('paste', handlePaste);
+  }, [dispatch, showToast]);
 
   const handleRefresh = useCallback(async () => {
     const r = getCuratedDataRaw(areaId).find(x => x.id === restaurantId);
@@ -275,7 +278,7 @@ export default function ImageSection({ areaId, restaurantId, onChanged }: Props)
       </div>
 
       {/* Pool grid */}
-      <div className="ei-pool-section" ref={poolRef} tabIndex={-1}>
+      <div className="ei-pool-section">
         <div className="ei-pool-header">
           <span className="ei-section-label">이미지 풀 (구글 포토)</span>
           <span className="ei-pool-hint">클릭으로 선택/해제 · Ctrl+V로 이미지 추가</span>
