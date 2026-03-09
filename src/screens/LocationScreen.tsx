@@ -14,11 +14,6 @@ const AREA_CONFIGS: { id: CuratedAreaId; emoji: string; label: string; desc: str
   { id: 'sookmyung', emoji: '🎀', label: '숙대입구역',   desc: '숙대 맛집' },
   { id: 'konkuk',    emoji: '🐄', label: '건대입구역',   desc: '건대 맛집' },
   { id: 'hongdae',   emoji: '🎸', label: '홍대입구역',   desc: '홍대 맛집' },
-  { id: 'ewha',      emoji: '🌸', label: '이대역',       desc: '이대 맛집' },
-  { id: 'seongsu',   emoji: '🏭', label: '성수역',       desc: '성수 맛집' },
-  { id: 'jamsil',    emoji: '🎢', label: '잠실역',       desc: '잠실 맛집' },
-  { id: 'euljiro',   emoji: '🏮', label: '을지로역',     desc: '을지로 맛집' },
-  { id: 'sadang',    emoji: '🚇', label: '사당역',       desc: '사당 맛집' },
   { id: 'gangnam',   emoji: '💎', label: '강남역',       desc: '강남 맛집' },
 ];
 
