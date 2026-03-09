@@ -71,7 +71,7 @@ function TournamentCard({
           )}
           <a
             className="gmaps-btn"
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + (r.address || ''))}`}
+            href={r.gmapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + ' ' + (r.address || ''))}`}
             target="_blank"
             rel="noopener noreferrer"
             onClick={e => e.stopPropagation()}
@@ -88,9 +88,9 @@ function TournamentCard({
 }
 
 function SummaryCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
-  const mapsHref = r.placeId
-    ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.address ? ' ' + r.address : ' 서울'))}`;
+  const mapsHref = r.gmapsUrl
+    || (r.placeId ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}` : '')
+    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.address ? ' ' + r.address : ' 서울'))}`;
 
   return (
     <div className="preview-card" role="listitem">

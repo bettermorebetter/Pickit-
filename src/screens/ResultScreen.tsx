@@ -92,9 +92,9 @@ export default function ResultScreen() {
 
   if (!c) return null;
 
-  const championMapsUrl = c.placeId
-    ? `https://www.google.com/maps/place/?q=place_id:${c.placeId}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + (c.address ? ' ' + c.address : ' 서울'))}`;
+  const championMapsUrl = c.gmapsUrl
+    || (c.placeId ? `https://www.google.com/maps/place/?q=place_id:${c.placeId}` : '')
+    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.name + (c.address ? ' ' + c.address : ' 서울'))}`;
 
   const hasMultiplePhotos = c.photoUrls && c.photoUrls.length > 1;
 

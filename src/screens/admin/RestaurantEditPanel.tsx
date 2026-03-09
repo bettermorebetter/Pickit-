@@ -26,6 +26,8 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
   const [lng, setLng] = useState('');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [gmapsUrl, setGmapsUrl] = useState('');
+  const [naverUrl, setNaverUrl] = useState('');
 
   useEffect(() => {
     const restaurants = getCuratedDataRaw(areaId);
@@ -40,6 +42,8 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
     setLng(r.lng != null ? String(r.lng) : '');
     setPriceMin(r.priceMin != null ? String(r.priceMin) : '');
     setPriceMax(r.priceMax != null ? String(r.priceMax) : '');
+    setGmapsUrl(r.gmapsUrl || '');
+    setNaverUrl(r.naverUrl || '');
     panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
     // Auto-fetch data for restaurants missing photos (first visit)
@@ -84,13 +88,15 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
     target.lng = parseFloat(lng) || 0;
     target.priceMin = priceMin ? parseInt(priceMin) : undefined;
     target.priceMax = priceMax ? parseInt(priceMax) : undefined;
+    target.gmapsUrl = gmapsUrl.trim() || undefined;
+    target.naverUrl = naverUrl.trim() || undefined;
 
     saveCuratedData(areaId, rests);
     onSaved();
     onClose();
-  }, [areaId, restaurantId, name, category, address, rating, reviewCount, lat, lng, priceMin, priceMax, onSaved, onClose]);
+  }, [areaId, restaurantId, name, category, address, rating, reviewCount, lat, lng, priceMin, priceMax, gmapsUrl, naverUrl, onSaved, onClose]);
 
-  const mapsLink = lat && lng && name
+  const autoMapsLink = lat && lng && name
     ? `https://www.google.com/maps/search/${encodeURIComponent(name)}/@${lat},${lng},17z`
     : '#';
 
@@ -130,9 +136,29 @@ export default function RestaurantEditPanel({ areaId, restaurantId, onClose, onS
             onChange={e => setAddress(e.target.value)}
             placeholder="서울 ..."
           />
-          <a className="edit-maps-link" href={mapsLink} target="_blank" rel="noopener">
+          <a className="edit-maps-link" href={gmapsUrl || autoMapsLink} target="_blank" rel="noopener">
             🗺 구글맵에서 확인
           </a>
+        </div>
+        <div className="editor-field">
+          <label className="editor-label">구글맵 링크</label>
+          <input
+            type="url"
+            className="editor-input"
+            value={gmapsUrl}
+            onChange={e => setGmapsUrl(e.target.value)}
+            placeholder="https://www.google.com/maps/place/..."
+          />
+        </div>
+        <div className="editor-field">
+          <label className="editor-label">네이버 지도 링크</label>
+          <input
+            type="url"
+            className="editor-input"
+            value={naverUrl}
+            onChange={e => setNaverUrl(e.target.value)}
+            placeholder="https://naver.me/... 또는 https://map.naver.com/..."
+          />
         </div>
         <div className="editor-field-row">
           <div className="editor-field">

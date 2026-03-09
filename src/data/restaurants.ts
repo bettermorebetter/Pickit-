@@ -410,6 +410,8 @@ export function getCuratedRestaurants(areaId: string): Restaurant[] {
     walkMinutes:  r.walkMinutes,
     priceMin:     r.priceMin,
     priceMax:     r.priceMax,
+    gmapsUrl:     r.gmapsUrl,
+    naverUrl:     r.naverUrl,
     bayesianScore: 0,
   }));
 }

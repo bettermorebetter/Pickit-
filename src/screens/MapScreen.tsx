@@ -16,9 +16,9 @@ function formatPrice(min?: number, max?: number): string | null {
 }
 
 function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
-  const mapsHref = r.placeId
-    ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.address ? ' ' + r.address : ' 서울'))}`;
+  const mapsHref = r.gmapsUrl
+    || (r.placeId ? `https://www.google.com/maps/place/?q=place_id:${r.placeId}` : '')
+    || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + (r.address ? ' ' + r.address : ' 서울'))}`;
 
   return (
     <div className="preview-card" role="listitem">

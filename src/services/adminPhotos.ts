@@ -344,6 +344,42 @@ export async function fetchRestaurantByPlaceId(placeId: string): Promise<PlaceId
   return null;
 }
 
+/**
+ * Fetch full restaurant data by text search (name + coordinates).
+ * Used when we don't have a valid Place ID (e.g. ftid-based URLs).
+ */
+export async function fetchRestaurantBySearch(name: string, lat: number, lng: number): Promise<PlaceIdData | null> {
+  try {
+    if (hasNewPlacesApi()) {
+      try {
+        const found = await findPlaceId(name, lat, lng);
+        if (found?.id) return await fetchByPlaceIdNew(found.id);
+      } catch (_e) { /* fall through */ }
+    }
+    if (hasOldPlacesApi()) {
+      return new Promise(resolve => {
+        const svc = new google.maps.places.PlacesService(document.createElement('div'));
+        const timer = setTimeout(() => resolve(null), 8000);
+        svc.findPlaceFromQuery(
+          { query: name, fields: ['place_id'], locationBias: { lat, lng } } as any,
+          (results, status) => {
+            if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.[0]?.place_id) {
+              clearTimeout(timer);
+              resolve(null);
+              return;
+            }
+            clearTimeout(timer);
+            fetchByPlaceIdOld(results[0].place_id!).then(resolve);
+          }
+        );
+      });
+    }
+  } catch (e) {
+    console.warn('fetchRestaurantBySearch failed:', e);
+  }
+  return null;
+}
+
 /* ── Price range fetch ─────────────────────────────────────── */
 
 export interface PriceRange {

@@ -5,30 +5,56 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAdmin } from '../../context/AdminContext.tsx';
 import { CURATED_AREAS, CURATED_DATA_VERSION, getCuratedDataRaw, saveCuratedData } from '../../data/restaurants.ts';
-import { fetchAllRestaurantData, fetchRestaurantByPlaceId, fetchPriceRange } from '../../services/adminPhotos.ts';
+import { fetchAllRestaurantData, fetchRestaurantByPlaceId, fetchRestaurantBySearch, fetchPriceRange } from '../../services/adminPhotos.ts';
 import type { CuratedRestaurantSeed, FoodCategoryKey, CuratedAreaId } from '../../types/index.ts';
 import RestaurantEditPanel from './RestaurantEditPanel.tsx';
 
-/* ── Google Maps URL → Place ID extraction ─────────────── */
+/* ── Google Maps URL parsing ────────────────────────────── */
 
-function extractPlaceId(url: string): string | null {
-  // Pattern 1: ChIJ... or similar place_id in URL params
+interface ParsedGmapsUrl {
+  placeId: string | null;   // ChIJ... format only (usable with Places API)
+  name: string | null;      // decoded place name from URL path
+  lat: number | null;
+  lng: number | null;
+}
+
+function parseGmapsUrl(url: string): ParsedGmapsUrl {
+  let placeId: string | null = null;
+  let name: string | null = null;
+  let lat: number | null = null;
+  let lng: number | null = null;
+
+  // Extract Place ID (ChIJ... format only — ftid hex format is NOT a valid Place ID)
   const paramMatch = url.match(/place_id[=:]([A-Za-z0-9_-]+)/);
-  if (paramMatch) return paramMatch[1];
+  if (paramMatch) placeId = paramMatch[1];
+  if (!placeId) {
+    const dataMatch = url.match(/!1s(ChIJ[A-Za-z0-9_-]+)/);
+    if (dataMatch) placeId = dataMatch[1];
+  }
 
-  // Pattern 2: /place/.../ data segment with !1s prefix (e.g. !1sChIJ...)
-  const dataMatch = url.match(/!1s(ChIJ[A-Za-z0-9_-]+)/);
-  if (dataMatch) return dataMatch[1];
+  // Extract place name from /place/NAME/ path segment
+  const placePathMatch = url.match(/\/place\/([^/]+)/);
+  if (placePathMatch) {
+    try { name = decodeURIComponent(placePathMatch[1]).replace(/\+/g, ' '); }
+    catch { name = placePathMatch[1].replace(/\+/g, ' '); }
+  }
 
-  // Pattern 3: hex-encoded ftid (e.g. !1s0x357ca...:0x...)
-  const ftidMatch = url.match(/!1s(0x[0-9a-f]+:0x[0-9a-f]+)/i);
-  if (ftidMatch) return ftidMatch[1];
+  // Extract coordinates from !3d (lat) and !4d (lng) data segments
+  const latMatch = url.match(/!3d(-?[\d.]+)/);
+  const lngMatch = url.match(/!4d(-?[\d.]+)/);
+  if (latMatch) lat = parseFloat(latMatch[1]);
+  if (lngMatch) lng = parseFloat(lngMatch[1]);
 
-  // Pattern 4: ?ftid=0x...:0x...
-  const ftidParam = url.match(/ftid=(0x[0-9a-f]+:0x[0-9a-f]+)/i);
-  if (ftidParam) return ftidParam[1];
+  // Also try @lat,lng format
+  if (lat == null || lng == null) {
+    const atMatch = url.match(/@(-?[\d.]+),(-?[\d.]+)/);
+    if (atMatch) {
+      lat = lat ?? parseFloat(atMatch[1]);
+      lng = lng ?? parseFloat(atMatch[2]);
+    }
+  }
 
-  return null;
+  return { placeId, name, lat, lng };
 }
 
 const CAT_LABELS: Record<string, string> = { korean: '한식', japanese: '일식', chinese: '중식', western: '양식' };
@@ -70,15 +96,34 @@ export default function RestaurantEditorTab() {
     const url = prompt('구글맵 URL을 붙여넣으세요:');
     if (!url?.trim()) return;
 
-    // Extract Place ID from Google Maps URL
-    const placeId = extractPlaceId(url.trim());
-    if (!placeId) {
-      showToast('Place ID를 추출할 수 없습니다. URL을 확인하세요.');
+    const parsed = parseGmapsUrl(url.trim());
+
+    // Need at least a Place ID, or name+coordinates to search
+    if (!parsed.placeId && !parsed.name) {
+      showToast('URL에서 식당 정보를 추출할 수 없습니다. URL을 확인하세요.');
       return;
     }
 
     showToast('식당 정보를 가져오는 중...');
-    const data = await fetchRestaurantByPlaceId(placeId);
+
+    let data: Awaited<ReturnType<typeof fetchRestaurantByPlaceId>> = null;
+
+    // Strategy 1: Use Place ID directly (ChIJ... format)
+    if (parsed.placeId) {
+      data = await fetchRestaurantByPlaceId(parsed.placeId);
+    }
+
+    // Strategy 2: Use name + coordinates for text search (ftid URLs, etc.)
+    if (!data && parsed.name && parsed.lat != null && parsed.lng != null) {
+      data = await fetchRestaurantBySearch(parsed.name, parsed.lat, parsed.lng);
+    }
+
+    // Strategy 3: Use just the name for text search (area center as fallback location)
+    if (!data && parsed.name) {
+      const area = CURATED_AREAS[editorAreaId];
+      data = await fetchRestaurantBySearch(parsed.name, area.lat, area.lng);
+    }
+
     if (!data) {
       showToast('식당 정보를 가져올 수 없습니다.');
       return;
@@ -102,6 +147,7 @@ export default function RestaurantEditorTab() {
       photoPool: orderedPhotos,
       lat: data.lat,
       lng: data.lng,
+      gmapsUrl: url.trim(),
     };
     rests.push(newRest);
     saveCuratedData(editorAreaId, rests);

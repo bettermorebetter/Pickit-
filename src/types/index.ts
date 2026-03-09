@@ -28,6 +28,8 @@ export interface Restaurant {
   walkMinutes?: number;
   priceMin?: number;
   priceMax?: number;
+  gmapsUrl?: string;
+  naverUrl?: string;
   bayesianScore?: number;
 }
 
@@ -46,6 +48,8 @@ export interface CuratedRestaurantSeed {
   walkMinutes?: number;
   priceMin?: number;
   priceMax?: number;
+  gmapsUrl?: string;
+  naverUrl?: string;
 }
 
 export interface CuratedArea {
