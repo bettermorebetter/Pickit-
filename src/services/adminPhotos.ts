@@ -345,38 +345,111 @@ export async function fetchRestaurantByPlaceId(placeId: string): Promise<PlaceId
 }
 
 /**
+ * Text search with wider radius — used when we only have name + approx coordinates.
+ */
+async function findPlaceIdWide(name: string, lat: number, lng: number): Promise<any | null> {
+  const Place = (google.maps.places as any).Place;
+  const searchFn = Place.searchByText || Place.searchText;
+  if (!searchFn) {
+    console.warn('[findPlaceIdWide] searchByText/searchText not available');
+    return null;
+  }
+
+  // Try with increasing radius: 500m → 2000m → 5000m
+  for (const radius of [500, 2000, 5000]) {
+    try {
+      const { places } = await searchFn.call(Place, {
+        textQuery: name,
+        fields: ['id', 'displayName', 'formattedAddress', 'location'],
+        maxResultCount: 1,
+        locationBias: { center: { lat, lng }, radius },
+      });
+      if (places?.[0]?.id) {
+        console.log(`[findPlaceIdWide] Found "${places[0].displayName}" with radius=${radius}m`);
+        return places[0];
+      }
+    } catch (e) {
+      console.warn(`[findPlaceIdWide] searchByText failed (radius=${radius}):`, e);
+    }
+  }
+
+  // Last resort: search without location bias
+  try {
+    const { places } = await searchFn.call(Place, {
+      textQuery: `${name} 서울`,
+      fields: ['id', 'displayName', 'formattedAddress', 'location'],
+      maxResultCount: 1,
+    });
+    if (places?.[0]?.id) {
+      console.log(`[findPlaceIdWide] Found "${places[0].displayName}" with no location bias`);
+      return places[0];
+    }
+  } catch (e) {
+    console.warn('[findPlaceIdWide] fallback search failed:', e);
+  }
+
+  return null;
+}
+
+/**
  * Fetch full restaurant data by text search (name + coordinates).
  * Used when we don't have a valid Place ID (e.g. ftid-based URLs).
  */
 export async function fetchRestaurantBySearch(name: string, lat: number, lng: number): Promise<PlaceIdData | null> {
-  try {
-    if (hasNewPlacesApi()) {
-      try {
-        const found = await findPlaceId(name, lat, lng);
-        if (found?.id) return await fetchByPlaceIdNew(found.id);
-      } catch (_e) { /* fall through */ }
+  console.log(`[fetchRestaurantBySearch] name="${name}", lat=${lat}, lng=${lng}`);
+  console.log(`[fetchRestaurantBySearch] hasNewApi=${hasNewPlacesApi()}, hasOldApi=${hasOldPlacesApi()}`);
+
+  // Strategy A: New Places API with wider search
+  if (hasNewPlacesApi()) {
+    try {
+      const found = await findPlaceIdWide(name, lat, lng);
+      if (found?.id) {
+        console.log(`[fetchRestaurantBySearch] New API found place id: ${found.id}`);
+        const result = await fetchByPlaceIdNew(found.id);
+        if (result) return result;
+      }
+    } catch (e) {
+      console.warn('[fetchRestaurantBySearch] New API failed:', e);
     }
-    if (hasOldPlacesApi()) {
-      return new Promise(resolve => {
+  }
+
+  // Strategy B: Old Places API
+  if (hasOldPlacesApi()) {
+    console.log('[fetchRestaurantBySearch] Trying old API...');
+    try {
+      const result = await new Promise<PlaceIdData | null>(resolve => {
         const svc = new google.maps.places.PlacesService(document.createElement('div'));
-        const timer = setTimeout(() => resolve(null), 8000);
+        const timer = setTimeout(() => {
+          console.warn('[fetchRestaurantBySearch] Old API timed out');
+          resolve(null);
+        }, 10000);
+
         svc.findPlaceFromQuery(
-          { query: name, fields: ['place_id'], locationBias: { lat, lng } } as any,
+          {
+            query: name,
+            fields: ['place_id', 'name', 'geometry'],
+            locationBias: new google.maps.LatLng(lat, lng),
+          } as any,
           (results, status) => {
+            console.log(`[fetchRestaurantBySearch] findPlaceFromQuery status: ${status}, results: ${results?.length}`);
             if (status !== google.maps.places.PlacesServiceStatus.OK || !results?.[0]?.place_id) {
               clearTimeout(timer);
               resolve(null);
               return;
             }
             clearTimeout(timer);
-            fetchByPlaceIdOld(results[0].place_id!).then(resolve);
+            console.log(`[fetchRestaurantBySearch] Old API found: ${results[0].name} (${results[0].place_id})`);
+            fetchByPlaceIdOld(results[0].place_id!).then(resolve).catch(() => resolve(null));
           }
         );
       });
+      if (result) return result;
+    } catch (e) {
+      console.warn('[fetchRestaurantBySearch] Old API failed:', e);
     }
-  } catch (e) {
-    console.warn('fetchRestaurantBySearch failed:', e);
   }
+
+  console.warn('[fetchRestaurantBySearch] All strategies failed');
   return null;
 }
 

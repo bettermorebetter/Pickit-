@@ -97,6 +97,7 @@ export default function RestaurantEditorTab() {
     if (!url?.trim()) return;
 
     const parsed = parseGmapsUrl(url.trim());
+    console.log('[handleAdd] parsed URL:', JSON.stringify(parsed));
 
     // Need at least a Place ID, or name+coordinates to search
     if (!parsed.placeId && !parsed.name) {
@@ -125,13 +126,18 @@ export default function RestaurantEditorTab() {
     }
 
     if (!data) {
-      showToast('식당 정보를 가져올 수 없습니다.');
+      console.warn('[handleAdd] All fetch strategies failed for:', parsed);
+      showToast('식당 정보를 가져올 수 없습니다. 콘솔(F12)에서 로그를 확인하세요.');
       return;
     }
 
     // Classify photos: food photos first
-    const { reorderByFood } = await import('../../services/foodClassifier.ts');
-    const { urls: orderedPhotos } = await reorderByFood(data.photoUrls);
+    let orderedPhotos = data.photoUrls;
+    if (orderedPhotos.length > 0) {
+      const { reorderByFood } = await import('../../services/foodClassifier.ts');
+      const result = await reorderByFood(data.photoUrls);
+      orderedPhotos = result.urls;
+    }
 
     const rests = getCuratedDataRaw(editorAreaId);
     const newId = `${editorAreaId}_${Date.now()}`;
