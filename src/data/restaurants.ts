@@ -26,8 +26,8 @@ export const CURATED_AREAS: Record<string, CuratedArea> = {
   snu: {
     id: 'snu',
     label: '서울대입구역',
-    lat: 37.4812,
-    lng: 126.9527,
+    lat: 37.48121,
+    lng: 126.952712,
     restaurants: [
       // Korean (13)
       { id: 'snu_k01', name: '구딩이 서울대점',           category: 'korean',   rating: 4.5, reviewCount: 1400, address: '서울 관악구 봉천동 1620-20',              lat: 37.4818, lng: 126.9519, photoPool: PHOTO_POOLS.koreanBbq,  photoUrls: [], photoUrl: '' },
@@ -88,8 +88,8 @@ export const CURATED_AREAS: Record<string, CuratedArea> = {
   konkuk: {
     id: 'konkuk',
     label: '건대입구역',
-    lat: 37.5404,
-    lng: 127.0699,
+    lat: 37.540372,
+    lng: 127.069276,
     restaurants: [
       // Korean (13)
       { id: 'kk_k01', name: '육일관 건대본점',          category: 'korean',   rating: 4.2, reviewCount: 580,  address: '서울 광진구 화양동 8-35',            lat: 37.5406, lng: 127.0709, photoPool: PHOTO_POOLS.koreanBbq,  photoUrls: [], photoUrl: '' },
@@ -150,8 +150,8 @@ export const CURATED_AREAS: Record<string, CuratedArea> = {
   hongdae: {
     id: 'hongdae',
     label: '홍대입구역',
-    lat: 37.5563,
-    lng: 126.9236,
+    lat: 37.557527,
+    lng: 126.924467,
     restaurants: [
       // Korean (13)
       { id: 'hd_k01', name: '401정육식당',               category: 'korean',   rating: 4.4, reviewCount: 2200, address: '서울 마포구 서교동 395-166',              lat: 37.5541, lng: 126.9218, photoPool: PHOTO_POOLS.koreanBbq,  photoUrls: [], photoUrl: '' },
@@ -212,8 +212,8 @@ export const CURATED_AREAS: Record<string, CuratedArea> = {
   gangnam: {
     id: 'gangnam',
     label: '강남역',
-    lat: 37.4979,
-    lng: 127.0276,
+    lat: 37.497952,
+    lng: 127.027619,
     restaurants: [
       // Korean (13)
       { id: 'gn_k01', name: '1992 덮밥&짜글이 강남본점',                    category: 'korean',    rating: 4.3,  reviewCount: 1400,  address: '서울 강남구 역삼동 824-11',                               lat: 37.4985, lng: 127.0283, photoPool: PHOTO_POOLS.kalguksu, photoUrls: [], photoUrl: '' },
@@ -274,8 +274,8 @@ export const CURATED_AREAS: Record<string, CuratedArea> = {
   sookmyung: {
     id: 'sookmyung',
     label: '숙대입구역',
-    lat: 37.5446,
-    lng: 126.9718,
+    lat: 37.545134,
+    lng: 126.971957,
     restaurants: [
       // Korean (13)
       { id: 'sm_k01', name: '한강로칼국수',                             category: 'korean',    rating: 4.8,  reviewCount: 673,   address: '서울 용산구 두텁바위로 9',                                 lat: 37.5454, lng: 126.9731, photoPool: PHOTO_POOLS.kalguksu, photoUrls: [], photoUrl: '' },

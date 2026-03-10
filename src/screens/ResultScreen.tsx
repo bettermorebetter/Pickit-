@@ -102,7 +102,7 @@ export default function ResultScreen() {
     <div className="screen">
       <div className="result-wrapper">
         <div className="result-crown">🏆</div>
-        <h2 className="result-title">나의 최애 맛집은?</h2>
+        <h2 className="result-title">오늘의 메뉴는?</h2>
 
         <div className="champion-card">
           <div className="champion-badge">우승! 🎉</div>
