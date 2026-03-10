@@ -1040,6 +1040,22 @@
     background: #f3f4f6;
     color: #9ca3af;
   }
+  .editor-walk-badge {
+    font-size: .6875rem;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: var(--radius-full);
+    background: #fef3c7;
+    color: #92400e;
+  }
+  .editor-price-badge {
+    font-size: .6875rem;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: var(--radius-full);
+    background: #dcfce7;
+    color: #166534;
+  }
 
   /* ── Editor: Toolbar ─────────────────────────────────────── */
   .editor-toolbar {

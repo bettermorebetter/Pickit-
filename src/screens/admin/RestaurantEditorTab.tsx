@@ -221,53 +221,69 @@ export default function RestaurantEditorTab() {
     const service = new google.maps.DistanceMatrixService();
     const origin = new google.maps.LatLng(area.lat, area.lng);
 
+    console.log(`=== ${area.label} 도보 시간 계산 시작 ===`);
+    console.log(`  출발지: ${area.label} (${area.lat}, ${area.lng})`);
+
     // Distance Matrix API allows max 25 destinations per request
     const BATCH_SIZE = 25;
     let completed = 0;
+    let failCount = 0;
 
-    for (let i = 0; i < rests.length; i += BATCH_SIZE) {
-      const batch = rests.slice(i, i + BATCH_SIZE);
-      const destinations = batch.map(r => new google.maps.LatLng(r.lat, r.lng));
+    try {
+      for (let i = 0; i < rests.length; i += BATCH_SIZE) {
+        const batch = rests.slice(i, i + BATCH_SIZE);
+        const destinations = batch.map(r => new google.maps.LatLng(r.lat, r.lng));
 
-      setWalkProgress(`🚶 ${completed}/${rests.length} 계산 중...`);
+        setWalkProgress(`🚶 ${completed}/${rests.length} 계산 중...`);
 
-      const response = await new Promise<google.maps.DistanceMatrixResponse>((resolve, reject) => {
-        service.getDistanceMatrix(
-          {
-            origins: [origin],
-            destinations,
-            travelMode: google.maps.TravelMode.WALKING,
-          },
-          (result, status) => {
-            if (status === google.maps.DistanceMatrixStatus.OK && result) {
-              resolve(result);
-            } else {
-              reject(new Error(`Distance Matrix API failed: ${status}`));
-            }
-          },
-        );
-      });
+        const response = await new Promise<google.maps.DistanceMatrixResponse>((resolve, reject) => {
+          service.getDistanceMatrix(
+            {
+              origins: [origin],
+              destinations,
+              travelMode: google.maps.TravelMode.WALKING,
+            },
+            (result, status) => {
+              if (status === google.maps.DistanceMatrixStatus.OK && result) {
+                resolve(result);
+              } else {
+                reject(new Error(`Distance Matrix API failed: ${status}`));
+              }
+            },
+          );
+        });
 
-      const elements = response.rows[0].elements;
-      for (let j = 0; j < batch.length; j++) {
-        const el = elements[j];
-        if (el.status === 'OK') {
-          batch[j].walkMinutes = Math.max(1, Math.round(el.duration.value / 60));
+        const elements = response.rows[0].elements;
+        for (let j = 0; j < batch.length; j++) {
+          const el = elements[j];
+          const r = batch[j];
+          const old = r.walkMinutes;
+          if (el.status === 'OK') {
+            const secs = el.duration.value;
+            r.walkMinutes = Math.max(1, Math.round(secs / 60));
+            console.log(`  ${r.name}: ${old ?? '-'}분 → ${r.walkMinutes}분 (${secs}초, ${el.distance.text})`);
+          } else {
+            failCount++;
+            console.warn(`  ${r.name}: API 실패 (status: ${el.status})`);
+          }
         }
+        completed += batch.length;
       }
-      completed += batch.length;
+
+      saveCuratedData(editorAreaId, rests);
+      dispatch({ type: 'BUMP_VERSION' });
+
+      setWalkProgress('');
+      const msg = failCount > 0
+        ? `🚶 ${rests.length - failCount}개 완료, ${failCount}개 실패`
+        : `🚶 ${rests.length}개 식당 도보 시간 계산 완료!`;
+      showToast(msg);
+    } catch (e) {
+      setWalkProgress('');
+      const errMsg = e instanceof Error ? e.message : String(e);
+      console.error('도보 시간 계산 오류:', errMsg);
+      showToast(`❌ 도보 시간 계산 실패: ${errMsg}`);
     }
-
-    saveCuratedData(editorAreaId, rests);
-    dispatch({ type: 'BUMP_VERSION' });
-
-    console.log(`=== ${area.label} walkMinutes (Google API) ===`);
-    for (const r of rests) {
-      console.log(`  ${r.id}: ${r.walkMinutes}분 (${r.name})`);
-    }
-
-    setWalkProgress('');
-    showToast(`🚶 ${rests.length}개 식당 도보 시간 계산 완료! (Google API)`);
   }, [editorAreaId, dispatch, showToast]);
 
   // Price level fetch
@@ -472,6 +488,16 @@ export default function RestaurantEditorTab() {
                       <span className="editor-img-count">📷 {imgCount}장</span>
                     ) : (
                       <span className="editor-img-count editor-img-count--none">이미지 없음</span>
+                    )}
+                    {r.walkMinutes != null && (
+                      <span className="editor-walk-badge">🚶 {r.walkMinutes}분</span>
+                    )}
+                    {(r.priceMin != null || r.priceMax != null) && (
+                      <span className="editor-price-badge">
+                        💰 {r.priceMin != null && r.priceMax != null && r.priceMin !== r.priceMax
+                          ? `${r.priceMin.toLocaleString()}~${r.priceMax.toLocaleString()}원`
+                          : `${(r.priceMin ?? r.priceMax)!.toLocaleString()}원`}
+                      </span>
                     )}
                   </div>
                   {r.address && <div className="editor-row-addr">📍 {r.address}</div>}
