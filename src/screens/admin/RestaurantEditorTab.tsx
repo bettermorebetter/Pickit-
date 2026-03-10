@@ -209,39 +209,65 @@ export default function RestaurantEditorTab() {
     })();
   }, [editorAreaId, dispatch, showToast]);
 
-  // Walk time calculation (straight-line distance × 1.3 correction, 80m/min)
-  const handleCalcWalkTimes = useCallback(() => {
+  // Walk time calculation using Google Distance Matrix API (walking mode)
+  const [walkProgress, setWalkProgress] = useState('');
+  const handleCalcWalkTimes = useCallback(async () => {
     const area = CURATED_AREAS[editorAreaId];
     if (!area) return;
 
     const rests = getCuratedDataRaw(editorAreaId);
     if (!rests.length) return;
 
-    // Haversine distance in meters
-    const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-      const R = 6371000;
-      const toRad = (d: number) => d * Math.PI / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLng = toRad(lng2 - lng1);
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
+    const service = new google.maps.DistanceMatrixService();
+    const origin = new google.maps.LatLng(area.lat, area.lng);
 
-    for (const r of rests) {
-      const dist = haversine(area.lat, area.lng, r.lat, r.lng);
-      const walkDist = dist * 1.3; // road detour correction
-      r.walkMinutes = Math.max(1, Math.round(walkDist / 80)); // 80m/min walking speed
+    // Distance Matrix API allows max 25 destinations per request
+    const BATCH_SIZE = 25;
+    let completed = 0;
+
+    for (let i = 0; i < rests.length; i += BATCH_SIZE) {
+      const batch = rests.slice(i, i + BATCH_SIZE);
+      const destinations = batch.map(r => new google.maps.LatLng(r.lat, r.lng));
+
+      setWalkProgress(`🚶 ${completed}/${rests.length} 계산 중...`);
+
+      const response = await new Promise<google.maps.DistanceMatrixResponse>((resolve, reject) => {
+        service.getDistanceMatrix(
+          {
+            origins: [origin],
+            destinations,
+            travelMode: google.maps.TravelMode.WALKING,
+          },
+          (result, status) => {
+            if (status === google.maps.DistanceMatrixStatus.OK && result) {
+              resolve(result);
+            } else {
+              reject(new Error(`Distance Matrix API failed: ${status}`));
+            }
+          },
+        );
+      });
+
+      const elements = response.rows[0].elements;
+      for (let j = 0; j < batch.length; j++) {
+        const el = elements[j];
+        if (el.status === 'OK') {
+          batch[j].walkMinutes = Math.max(1, Math.round(el.duration.value / 60));
+        }
+      }
+      completed += batch.length;
     }
 
     saveCuratedData(editorAreaId, rests);
     dispatch({ type: 'BUMP_VERSION' });
 
-    console.log(`=== ${area.label} walkMinutes ===`);
+    console.log(`=== ${area.label} walkMinutes (Google API) ===`);
     for (const r of rests) {
       console.log(`  ${r.id}: ${r.walkMinutes}분 (${r.name})`);
     }
 
-    showToast(`🚶 ${rests.length}개 식당 도보 시간 계산 완료!`);
+    setWalkProgress('');
+    showToast(`🚶 ${rests.length}개 식당 도보 시간 계산 완료! (Google API)`);
   }, [editorAreaId, dispatch, showToast]);
 
   // Price level fetch
@@ -462,8 +488,8 @@ export default function RestaurantEditorTab() {
 
       <div className="editor-toolbar">
         <button className="admin-btn admin-btn--primary" onClick={handleAdd}>+ 식당 추가</button>
-        <button className="admin-btn" onClick={handleCalcWalkTimes}>
-          🚶 도보 시간 계산
+        <button className="admin-btn" onClick={handleCalcWalkTimes} disabled={!!walkProgress}>
+          {walkProgress || '🚶 도보 시간 계산'}
         </button>
         <button
           className="admin-btn"
