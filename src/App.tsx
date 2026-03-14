@@ -8,8 +8,10 @@ import MapScreen from './screens/MapScreen.tsx';
 import TournamentScreen from './screens/TournamentScreen.tsx';
 import ResultScreen from './screens/ResultScreen.tsx';
 import AdminScreen from './screens/AdminScreen.tsx';
+import CreateWorldCupScreen from './screens/CreateWorldCupScreen.tsx';
 // Hydrate localStorage from KV on app start (non-blocking)
 import('./services/kvStorage.ts').then(m => m.hydrateFromKV()).catch(() => {});
+import('./services/worldCupStorage.ts').then(m => m.hydrateWorldCupsFromKV()).catch(() => {});
 
 function ScreenRouter() {
   const { state } = useApp();
@@ -25,6 +27,8 @@ function ScreenRouter() {
       return <ResultScreen />;
     case 'admin':
       return <AdminScreen />;
+    case 'create-worldcup':
+      return <CreateWorldCupScreen />;
     default:
       return <LocationScreen />;
   }

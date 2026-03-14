@@ -3,7 +3,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
-import type { AppState, AppAction, Restaurant, BracketState } from '../types/index.ts';
+import type { AppState, AppAction, Restaurant, BracketState, WorldCup } from '../types/index.ts';
 import { TOTAL_MATCHES } from '../types/index.ts';
 import { shuffle } from '../data/constants.ts';
 
@@ -17,6 +17,7 @@ const initialBracket: BracketState = {
 const initialState: AppState = {
   screen: 'location',
   locationMode: null,
+  activeWorldCup: null,
   restaurants: [],
   bracket: initialBracket,
   champion: null,
@@ -101,6 +102,9 @@ function appReducer(state: AppState, action: AppAction): AppState {
 
     case 'SET_CHAMPION':
       return { ...state, champion: action.champion, screen: 'result' };
+
+    case 'SET_WORLDCUP':
+      return { ...state, activeWorldCup: action.worldCup };
 
     case 'RESET':
       return { ...initialState };

@@ -62,8 +62,24 @@ export interface CuratedArea {
 
 export type CuratedAreaId = 'snu' | 'konkuk' | 'hongdae' | 'gangnam' | 'sookmyung';
 
+export interface WorldCupRestaurant {
+  name: string;
+  category: FoodCategoryKey;
+  photoUrl?: string;
+  address?: string;
+}
+
+export interface WorldCup {
+  id: string;
+  title: string;
+  creator: string;
+  restaurants: WorldCupRestaurant[];
+  createdAt: number;
+  playCount: number;
+}
+
 export type LocationMode = CuratedAreaId | null;
-export type ScreenName = 'location' | 'map' | 'tournament' | 'result' | 'admin';
+export type ScreenName = 'location' | 'map' | 'tournament' | 'result' | 'admin' | 'create-worldcup';
 
 export interface BracketState {
   rounds: [Restaurant, Restaurant][][];
@@ -75,6 +91,7 @@ export interface BracketState {
 export interface AppState {
   screen: ScreenName;
   locationMode: LocationMode;
+  activeWorldCup: WorldCup | null;
   restaurants: Restaurant[];
   bracket: BracketState;
   champion: Restaurant | null;
@@ -87,6 +104,7 @@ export type AppAction =
   | { type: 'INIT_BRACKET'; restaurants: Restaurant[] }
   | { type: 'PICK_WINNER'; winner: Restaurant }
   | { type: 'SET_CHAMPION'; champion: Restaurant }
+  | { type: 'SET_WORLDCUP'; worldCup: WorldCup | null }
   | { type: 'RESET' };
 
 export const ROUND_LABELS: Record<number, string> = { 0: '8강', 1: '4강', 2: '결승' };

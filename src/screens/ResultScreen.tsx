@@ -28,6 +28,12 @@ export default function ResultScreen() {
   useEffect(() => {
     if (!c || !mapRef.current) return;
 
+    // Skip map if no coordinates (e.g. user-created world cup)
+    if (!c.lat && !c.lng) {
+      mapRef.current.style.display = 'none';
+      return;
+    }
+
     // Clean up old
     if (markerRef.current) markerRef.current.setMap(null);
     if (infoWindowRef.current) infoWindowRef.current.close();
@@ -69,19 +75,23 @@ export default function ResultScreen() {
     }
   }, [c]);
 
+  const wc = state.activeWorldCup;
+
   const handleShare = useCallback(() => {
     if (!c) return;
-    const shareText = `🏆 서울 푸드 월드컵 우승!\n${c.name} (${c.category}) ★${c.rating}\n📍 ${c.address || '서울'}`;
+    const wcTitle = wc ? wc.title : '서울 푸드 월드컵';
+    const ratingText = c.rating > 0 ? ` ★${c.rating}` : '';
+    const shareText = `🏆 ${wcTitle} 우승!\n${c.name} (${c.category})${ratingText}\n📍 ${c.address || '서울'}`;
 
     if (navigator.share) {
-      navigator.share({ title: '서울 푸드 월드컵', text: shareText }).catch(() => {});
+      navigator.share({ title: wcTitle, text: shareText }).catch(() => {});
     } else if (navigator.clipboard) {
       navigator.clipboard.writeText(shareText).then(() => {
         setShareLabel('복사됨! ✅');
         setTimeout(() => setShareLabel('공유하기 📤'), 2000);
       }).catch(() => {});
     }
-  }, [c]);
+  }, [c, wc]);
 
   const handleRestart = useCallback(() => {
     dispatch({ type: 'RESET' });
@@ -120,11 +130,15 @@ export default function ResultScreen() {
             <div className="champion-card-category">{c.category}</div>
             {c.address && <div className="champion-card-address">📍 {c.address}</div>}
             <div className="champion-card-rating">
-              <span className="star">★</span>
-              <span>{c.rating}</span>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '.8125rem' }}>
-                ({c.reviewCount.toLocaleString()} 리뷰)
-              </span>
+              {c.rating > 0 && (
+                <>
+                  <span className="star">★</span>
+                  <span>{c.rating}</span>
+                  <span style={{ color: 'var(--color-text-muted)', fontSize: '.8125rem' }}>
+                    ({c.reviewCount.toLocaleString()} 리뷰)
+                  </span>
+                </>
+              )}
               {formatPrice(c.priceMin, c.priceMax) && (
                 <span className="price-tag">💰 {formatPrice(c.priceMin, c.priceMax)}</span>
               )}

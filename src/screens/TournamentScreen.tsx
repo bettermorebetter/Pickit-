@@ -58,10 +58,14 @@ function TournamentCard({
           <div className="tournament-card-name">{r.name}</div>
           <div className="tournament-card-info-row">
             <span className="tournament-card-category">{r.category}</span>
-            <span className="tournament-card-sep">·</span>
-            <span className="star">★</span>
-            <span>{r.rating}</span>
-            <span className="tournament-card-reviews">({r.reviewCount.toLocaleString()})</span>
+            {r.rating > 0 && (
+              <>
+                <span className="tournament-card-sep">·</span>
+                <span className="star">★</span>
+                <span>{r.rating}</span>
+                <span className="tournament-card-reviews">({r.reviewCount.toLocaleString()})</span>
+              </>
+            )}
           </div>
           {formatPrice(r.priceMin, r.priceMax) && (
             <div className="tournament-card-price">💰 {formatPrice(r.priceMin, r.priceMax)}</div>
@@ -110,9 +114,13 @@ function SummaryCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
           <div className="preview-card-name">{r.name}</div>
           <div className="preview-card-meta">
             <span>{r.category}</span>
-            <span className="star">★</span>
-            <span>{r.rating}</span>
-            <span>({r.reviewCount.toLocaleString()})</span>
+            {r.rating > 0 && (
+              <>
+                <span className="star">★</span>
+                <span>{r.rating}</span>
+                <span>({r.reviewCount.toLocaleString()})</span>
+              </>
+            )}
           </div>
           {formatPrice(r.priceMin, r.priceMax) && (
             <div className="preview-card-price">💰 {formatPrice(r.priceMin, r.priceMax)}</div>

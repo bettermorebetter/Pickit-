@@ -38,9 +38,13 @@ function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
           <div className="preview-card-name">{r.name}</div>
           <div className="preview-card-meta">
             <span>{r.category}</span>
-            <span className="star">★</span>
-            <span>{r.rating}</span>
-            <span>({r.reviewCount.toLocaleString()})</span>
+            {r.rating > 0 && (
+              <>
+                <span className="star">★</span>
+                <span>{r.rating}</span>
+                <span>({r.reviewCount.toLocaleString()})</span>
+              </>
+            )}
           </div>
           {formatPrice(r.priceMin, r.priceMax) && (
             <div className="preview-card-price">💰 {formatPrice(r.priceMin, r.priceMax)}</div>
@@ -50,14 +54,16 @@ function PreviewCard({ r, areaLabel }: { r: Restaurant; areaLabel?: string }) {
           )}
         </div>
       </div>
-      <a
-        className="gmaps-btn"
-        href={mapsHref}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        📍 구글맵에서 보기
-      </a>
+      {mapsHref && (
+        <a
+          className="gmaps-btn"
+          href={mapsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          📍 구글맵에서 보기
+        </a>
+      )}
     </div>
   );
 }
@@ -67,7 +73,8 @@ export default function MapScreen() {
 
   const mode = state.locationMode;
   const area = mode ? CURATED_AREAS[mode] : null;
-  const title = area ? `${area.label} 맛집` : '주변 맛집';
+  const wc = state.activeWorldCup;
+  const title = wc ? wc.title : area ? `${area.label} 맛집` : '주변 맛집';
 
   return (
     <div className="screen">

@@ -718,6 +718,166 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
+   LOCATION TABS & WORLD CUP
+══════════════════════════════════════════════════════════════ */
+@layer screens {
+  .location-tabs {
+    display: flex; gap: var(--sp-1); margin-bottom: var(--sp-4);
+    background: var(--color-bg); border-radius: var(--radius-md); padding: var(--sp-1);
+  }
+  .location-tab {
+    flex: 1; padding: var(--sp-2) var(--sp-3); border: none; background: none;
+    border-radius: var(--radius-sm); font-size: .875rem; font-weight: 600;
+    color: var(--color-text-muted); cursor: pointer; transition: var(--transition);
+    font-family: var(--font-base);
+  }
+  .location-tab--active {
+    background: var(--color-surface); color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Create world cup button */
+  .wc-create-btn { margin-bottom: var(--sp-4); }
+
+  /* Empty state */
+  .wc-empty {
+    text-align: center; padding: var(--sp-8) var(--sp-4);
+  }
+  .wc-empty-icon { font-size: 3rem; margin-bottom: var(--sp-3); }
+  .wc-empty-text { font-size: 1rem; font-weight: 700; color: var(--color-text); margin-bottom: var(--sp-1); }
+  .wc-empty-sub { font-size: .8125rem; color: var(--color-text-muted); }
+
+  /* World cup list */
+  .wc-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+  .wc-card {
+    display: flex; gap: var(--sp-2); background: var(--color-bg);
+    border-radius: var(--radius-md); border: 1px solid var(--color-border);
+    overflow: hidden; transition: var(--transition);
+  }
+  .wc-card:hover { box-shadow: var(--shadow-sm); }
+
+  .wc-card-main {
+    flex: 1; padding: var(--sp-3) var(--sp-4); cursor: pointer;
+    min-width: 0;
+  }
+  .wc-card-title {
+    font-size: .9375rem; font-weight: 700; color: var(--color-text);
+    margin-bottom: var(--sp-1);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .wc-card-meta {
+    font-size: .75rem; color: var(--color-text-muted); margin-bottom: var(--sp-2);
+  }
+  .wc-card-dot { margin: 0 var(--sp-1); }
+
+  .wc-card-restaurants {
+    display: flex; flex-wrap: wrap; gap: var(--sp-1);
+  }
+  .wc-card-tag {
+    font-size: .6875rem; background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-full); padding: 2px var(--sp-2);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 120px;
+  }
+
+  .wc-card-actions {
+    display: flex; flex-direction: column; border-left: 1px solid var(--color-border);
+  }
+  .wc-action-btn {
+    flex: 1; padding: var(--sp-2) var(--sp-3); border: none; background: none;
+    cursor: pointer; font-size: 1rem; transition: var(--transition);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .wc-action-btn:hover { background: var(--color-bg); }
+  .wc-action-btn--danger:hover { background: #fee2e2; }
+
+  /* Share toast */
+  .wc-toast {
+    position: fixed; bottom: var(--sp-8); left: 50%; transform: translateX(-50%);
+    background: var(--color-text); color: var(--color-surface);
+    padding: var(--sp-2) var(--sp-5); border-radius: var(--radius-full);
+    font-size: .875rem; font-weight: 600; z-index: 1000;
+    animation: toast-in .3s ease;
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  /* ── Create World Cup Screen ──────────────────────────── */
+  .create-wc-wrapper {
+    max-width: 480px; margin: 0 auto; padding: var(--sp-4);
+    padding-bottom: calc(var(--sp-12) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .create-wc-form {
+    background: var(--color-surface); border-radius: var(--radius-xl);
+    padding: var(--sp-5); box-shadow: var(--shadow-md); border: 1.5px solid var(--color-border);
+  }
+
+  .create-wc-field { margin-bottom: var(--sp-4); }
+
+  .create-wc-label {
+    font-size: .8125rem; font-weight: 700; color: var(--color-text);
+    margin-bottom: var(--sp-2); display: block;
+  }
+
+  .create-wc-input {
+    width: 100%; padding: var(--sp-2) var(--sp-3);
+    border: 1.5px solid var(--color-border); border-radius: var(--radius-sm);
+    font-size: .875rem; font-family: var(--font-base); color: var(--color-text);
+    background: var(--color-bg); transition: var(--transition);
+  }
+  .create-wc-input:focus {
+    outline: none; border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, .15);
+  }
+  .create-wc-input--small { flex: 1; }
+
+  .create-wc-select {
+    padding: var(--sp-2) var(--sp-3);
+    border: 1.5px solid var(--color-border); border-radius: var(--radius-sm);
+    font-size: .875rem; font-family: var(--font-base); color: var(--color-text);
+    background: var(--color-bg); cursor: pointer; min-width: 100px;
+  }
+
+  .create-wc-divider {
+    height: 1px; background: var(--color-border); margin: var(--sp-4) 0;
+  }
+
+  .create-wc-restaurant {
+    background: var(--color-bg); border-radius: var(--radius-md);
+    padding: var(--sp-3); margin-bottom: var(--sp-3);
+    display: flex; flex-direction: column; gap: var(--sp-2);
+    border: 1px solid var(--color-border);
+  }
+
+  .create-wc-restaurant-header {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .create-wc-restaurant-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: var(--radius-full);
+    background: var(--color-primary); color: white; font-size: .75rem; font-weight: 700;
+  }
+  .create-wc-restaurant-check {
+    color: var(--color-success); font-weight: 700; font-size: .875rem;
+  }
+
+  .create-wc-row {
+    display: flex; gap: var(--sp-2);
+  }
+
+  .create-wc-error {
+    background: #fee2e2; border: 1px solid #fca5a5; border-radius: var(--radius-md);
+    padding: var(--sp-3); color: #b91c1c; font-size: .8125rem;
+    font-weight: 500; margin-bottom: var(--sp-3);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
    ADMIN
 ══════════════════════════════════════════════════════════════ */
 @layer admin {
